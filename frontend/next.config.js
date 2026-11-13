@@ -4,6 +4,14 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://legion-fenix-fc.onrender.com/api/:path*',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

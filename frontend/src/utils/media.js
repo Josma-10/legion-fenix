@@ -6,7 +6,8 @@ export function resolveAssetUrl(url, fallback = '/assets/avatar-player.svg') {
     return trimmed;
   }
   if (trimmed.startsWith('/uploads/')) {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_URL || 'https://legion-fenix-fc.onrender.com/api';
     const origin = apiBase.replace(/\/api\/?$/, '');
     return `${origin}${trimmed}`;
   }
