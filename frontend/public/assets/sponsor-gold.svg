@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 80" fill="none">
+  <rect width="180" height="80" rx="10" fill="#181818" stroke="#D32F2F" stroke-width="1.5"/>
+  <circle cx="34" cy="40" r="16" fill="#7A001E"/>
+  <path d="M34 28L39 40H33L36 52L27 38H33L34 28Z" fill="#FFD54F"/>
+  <text x="62" y="38" fill="#FFFFFF" font-family="Arial, sans-serif" font-weight="800" font-size="13">ENERGÍA VITAL</text>
+  <text x="62" y="54" fill="#A0A0A0" font-family="Arial, sans-serif" font-size="9">SPONSOR ORO</text>
+</svg>

@@ -1,0 +1,32 @@
+# Dependencias
+node_modules/
+*/node_modules/
+
+# Compilaciones Next.js
+.next/
+frontend/.next/
+frontend/out/
+
+# Variables de entorno secretas
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# Base de datos local
+.pgdata/
+
+# Sesión WhatsApp QR local
+backend/.wa_auth/
+
+# Archivos subidos localmente
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs y SO
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

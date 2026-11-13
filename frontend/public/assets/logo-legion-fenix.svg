@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 136" fill="none">
+  <defs>
+    <linearGradient id="shieldGrad" x1="60" y1="4" x2="60" y2="132" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9E0028"/>
+      <stop offset="55%" stop-color="#7A001E"/>
+      <stop offset="100%" stop-color="#3A000E"/>
+    </linearGradient>
+    <linearGradient id="flameGrad" x1="60" y1="20" x2="60" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF5252"/>
+      <stop offset="45%" stop-color="#D32F2F"/>
+      <stop offset="100%" stop-color="#FFFFFF"/>
+    </linearGradient>
+  </defs>
+  <path d="M60 4L110 22V68C110 98 86 121 60 132C34 121 10 98 10 68V22L60 4Z" fill="url(#shieldGrad)" stroke="#D32F2F" stroke-width="4"/>
+  <path d="M60 12L102 27V67C102 92 82 112 60 122C38 112 18 92 18 67V27L60 12Z" fill="#121212" fill-opacity="0.88" stroke="#7A001E" stroke-width="2"/>
+  <path d="M60 22C67 34 74 37 83 33C79 45 86 52 93 52C82 61 77 69 79 81C71 74 66 76 60 88C54 76 49 74 41 81C43 69 38 61 27 52C34 52 41 45 37 33C46 37 53 34 60 22Z" fill="url(#flameGrad)"/>
+  <circle cx="60" cy="54" r="9" fill="#121212" stroke="#FFFFFF" stroke-width="2"/>
+  <path d="M60 47L63 54L60 61L57 54L60 47Z" fill="#D32F2F"/>
+  <text x="60" y="106" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-weight="900" font-size="11" letter-spacing="2">FÉNIX</text>
+</svg>

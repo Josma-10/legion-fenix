@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260" fill="none">
+  <rect width="480" height="260" fill="#181818"/>
+  <path d="M60 150H145L175 95L210 185L245 110L275 150H420" stroke="#D32F2F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="240" cy="130" r="88" stroke="#7A001E" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="36" y="226" fill="#FFFFFF" font-family="Arial, sans-serif" font-weight="800" font-size="16" letter-spacing="2">CIENCIA Y SALUD DEPORTIVA</text>
+</svg>

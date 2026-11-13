@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260" fill="none">
+  <defs>
+    <linearGradient id="bgAcad" x1="0" y1="0" x2="480" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E1E1E"/>
+      <stop offset="100%" stop-color="#7A001E"/>
+    </linearGradient>
+  </defs>
+  <rect width="480" height="260" fill="url(#bgAcad)"/>
+  <rect x="40" y="40" width="400" height="180" rx="12" stroke="#D32F2F" stroke-opacity="0.4" stroke-width="2"/>
+  <path d="M240 40V220" stroke="#FFFFFF" stroke-opacity="0.15" stroke-width="2"/>
+  <circle cx="240" cy="130" r="42" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2"/>
+  <text x="36" y="226" fill="#FFFFFF" font-family="Arial, sans-serif" font-weight="800" font-size="16" letter-spacing="2">ACADEMIA FORMATIVA</text>
+</svg>

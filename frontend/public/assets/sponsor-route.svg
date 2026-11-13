@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 80" fill="none">
+  <rect width="180" height="80" rx="10" fill="#181818" stroke="#333333" stroke-width="1.5"/>
+  <circle cx="34" cy="40" r="14" stroke="#D32F2F" stroke-width="3"/>
+  <circle cx="34" cy="40" r="5" fill="#FFFFFF"/>
+  <text x="62" y="38" fill="#FFFFFF" font-family="Arial, sans-serif" font-weight="800" font-size="13">RUTA SEGURA</text>
+  <text x="62" y="54" fill="#A0A0A0" font-family="Arial, sans-serif" font-size="9">TRANSPORTE OFICIAL</text>
+</svg>

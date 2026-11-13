@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 80" fill="none">
+  <rect width="180" height="80" rx="10" fill="#181818" stroke="#555555" stroke-width="1.5"/>
+  <polygon points="34,22 50,34 18,34" fill="#D32F2F"/>
+  <rect x="20" y="37" width="28" height="18" fill="#7A001E"/>
+  <text x="62" y="38" fill="#FFFFFF" font-family="Arial, sans-serif" font-weight="800" font-size="12">METROPOLITANO</text>
+  <text x="62" y="54" fill="#A0A0A0" font-family="Arial, sans-serif" font-size="9">BANCA ALIADA</text>
+</svg>
