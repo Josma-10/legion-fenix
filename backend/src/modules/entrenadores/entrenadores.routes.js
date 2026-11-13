@@ -27,9 +27,10 @@ router.post('/trabajos', checkRole(['ENTRENADOR', 'FISIO']), entrenadoresControl
 router.patch('/trabajos/:id', checkRole(['ENTRENADOR', 'FISIO']), entrenadoresController.updateTrabajo);
 router.delete('/trabajos/:id', checkRole(['ENTRENADOR', 'FISIO']), entrenadoresController.deleteTrabajo);
 
-// Evaluación Manual del Jugador (Física, Técnica con Balón, Coordinativa)
+// Evaluación Manual y Masiva del Jugador (Física, Técnica con Balón, Coordinativa)
 router.get('/evaluations', checkRole(['ENTRENADOR', 'FISIO']), entrenadoresController.listEvaluations);
 router.post('/evaluations', checkRole(['ENTRENADOR']), entrenadoresController.createEvaluation);
+router.post('/evaluations/batch', checkRole(['ENTRENADOR']), entrenadoresController.createBatchEvaluations);
 
 // Asistencia Entrenamientos y Juegos + Elegibilidad (Entrenador)
 router.get('/attendance', checkRole(['ENTRENADOR']), entrenadoresController.getCoachAttendance);

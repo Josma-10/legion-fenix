@@ -5,8 +5,29 @@ const { getUploadedFileUrl } = require('../../config/cloudinary');
 exports.listPlayers = async (req, res) => {
   try {
     const isStaff = ['ADMINISTRADOR', 'ANALISTA_ADMIN', 'ENTRENADOR', 'FISIO'].includes(req.user.rol);
+    let idRepresentante = null;
+
+    if (!isStaff) {
+      idRepresentante = req.user.id_representante || null;
+      if (!idRepresentante) {
+        const pool = require('../../config/db');
+        const { rows } = await pool.query(
+          'SELECT id_representante FROM representantes WHERE id_usuario = $1 LIMIT 1',
+          [req.user.id]
+        );
+        if (rows.length > 0) {
+          idRepresentante = rows[0].id_representante;
+        }
+      }
+
+      // Si no es staff y no tiene id_representante asignado, no tiene acceso a ningún atleta
+      if (!idRepresentante) {
+        return res.json({ players: [] });
+      }
+    }
+
     const rawPlayers = await representantesModel.getPlayersList({
-      idRepresentante: isStaff ? null : req.user.id_representante,
+      idRepresentante,
     });
     const players =
       req.user.rol === 'ANALISTA_ADMIN'

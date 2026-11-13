@@ -58,6 +58,10 @@ exports.login = async (req, res) => {
     return res.status(400).json({ error: 'Usuario/email y contraseña requeridos.' });
   }
 
+  if (/\s/.test(username) || /\s/.test(password)) {
+    return res.status(400).json({ error: 'No se permiten espacios en blanco en el usuario ni en la contraseña.' });
+  }
+
   try {
     const user = await authModel.findByUsernameOrEmail(username.trim());
     if (!user) {

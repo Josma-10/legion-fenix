@@ -23,6 +23,12 @@ import {
   Box,
   Link2,
   SlidersHorizontal,
+  Flame,
+  Zap,
+  Compass,
+  Trophy,
+  Eraser,
+  UserCheck,
 } from 'lucide-react';
 import api from '../../utils/api';
 import { groupCategoriesByDiscipline } from '../../utils/categories';
@@ -43,6 +49,354 @@ import {
   applyShootAtGoalSteps,
   extractTrajectoriesFromPasos,
 } from '../../utils/tacticalMoves';
+
+export const ESTILOS_JUEGO_PRO = [
+  {
+    key: 'gegenpressing',
+    nombre: 'Gegenpressing (Presión Tras Pérdida)',
+    filosofia: 'Acoso asfixiante e inmediato tras pérdida de balón, reducción de espacios, orientación forzada a banda y salida vertical veloz al recuperar.',
+    foco: 'Intensidad física, anticipación táctica y bloque alto.',
+    badge: 'Bloque Alto',
+    buildSteps: () => [
+      {
+        descripcion: 'Fase 1: Pérdida en campo rival y acoso inmediato al poseedor',
+        jugadores: [
+          { id: 'JUG-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 88 },
+          { id: 'JUG-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 38, y: 55 },
+          { id: 'JUG-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 62, y: 55 },
+          { id: 'JUG-2', dorsal: 2, label: '2', rol: 'LD', team: 'A', color: 'vinotinto', x: 82, y: 44 },
+          { id: 'JUG-3', dorsal: 3, label: '3', rol: 'LI', team: 'A', color: 'vinotinto', x: 18, y: 44 },
+          { id: 'JUG-6', dorsal: 6, label: '6', rol: 'MCD', team: 'A', color: 'vinotinto', x: 50, y: 40 },
+          { id: 'JUG-8', dorsal: 8, label: '8', rol: 'MC', team: 'A', color: 'vinotinto', x: 34, y: 30 },
+          { id: 'JUG-10', dorsal: 10, label: '10', rol: 'MP', team: 'A', color: 'vinotinto', x: 64, y: 28 },
+          { id: 'JUG-7', dorsal: 7, label: '7', rol: 'ED', team: 'A', color: 'vinotinto', x: 74, y: 18 },
+          { id: 'JUG-11', dorsal: 11, label: '11', rol: 'EI', team: 'A', color: 'vinotinto', x: 26, y: 18 },
+          { id: 'JUG-9', dorsal: 9, label: '9', rol: 'DC', team: 'A', color: 'rojo', x: 48, y: 16 },
+          { id: 'RIV-4', dorsal: 4, label: '4', rol: 'DEF', team: 'B', color: 'azul', x: 50, y: 12 },
+          { id: 'RIV-6', dorsal: 6, label: '6', rol: 'MED', team: 'B', color: 'azul', x: 42, y: 22 },
+        ],
+        balon: { x: 49, y: 14 },
+      },
+      {
+        descripcion: 'Fase 2: Asedio 3v1 en zona activa y corte de líneas de escape',
+        jugadores: [
+          { id: 'JUG-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 84 },
+          { id: 'JUG-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 38, y: 48 },
+          { id: 'JUG-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 62, y: 48 },
+          { id: 'JUG-2', dorsal: 2, label: '2', rol: 'LD', team: 'A', color: 'vinotinto', x: 78, y: 38 },
+          { id: 'JUG-3', dorsal: 3, label: '3', rol: 'LI', team: 'A', color: 'vinotinto', x: 22, y: 38 },
+          { id: 'JUG-6', dorsal: 6, label: '6', rol: 'MCD', team: 'A', color: 'vinotinto', x: 50, y: 32 },
+          { id: 'JUG-8', dorsal: 8, label: '8', rol: 'MC', team: 'A', color: 'vinotinto', x: 38, y: 22 },
+          { id: 'JUG-10', dorsal: 10, label: '10', rol: 'MP', team: 'A', color: 'vinotinto', x: 60, y: 20 },
+          { id: 'JUG-7', dorsal: 7, label: '7', rol: 'ED', team: 'A', color: 'vinotinto', x: 64, y: 14 },
+          { id: 'JUG-11', dorsal: 11, label: '11', rol: 'EI', team: 'A', color: 'vinotinto', x: 32, y: 15 },
+          { id: 'JUG-9', dorsal: 9, label: '9', rol: 'DC', team: 'A', color: 'rojo', x: 49, y: 13 },
+          { id: 'RIV-4', dorsal: 4, label: '4', rol: 'DEF', team: 'B', color: 'azul', x: 50, y: 11 },
+          { id: 'RIV-6', dorsal: 6, label: '6', rol: 'MED', team: 'B', color: 'azul', x: 44, y: 21 },
+        ],
+        balon: { x: 49, y: 13 },
+      },
+    ],
+  },
+  {
+    key: 'ataque_posicional',
+    nombre: 'Ataque Posicional (Juego de Posición)',
+    filosofia: 'Ocupación racional con máxima amplitud y profundidad. Fijación de marcas centrales para generar el tercer hombre en pasillos interiores.',
+    foco: 'Paciencia en circulación, perfiles orientados y ventaja posicional.',
+    badge: 'Juego Asociativo',
+    buildSteps: () => [
+      {
+        descripcion: 'Estructura 1-4-3-3 abierta: Extremos en línea de cal y laterales en pasillo interno',
+        jugadores: [
+          { id: 'JUG-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 90 },
+          { id: 'JUG-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 35, y: 70 },
+          { id: 'JUG-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 65, y: 70 },
+          { id: 'JUG-2', dorsal: 2, label: '2', rol: 'LD', team: 'A', color: 'vinotinto', x: 72, y: 56 },
+          { id: 'JUG-3', dorsal: 3, label: '3', rol: 'LI', team: 'A', color: 'vinotinto', x: 28, y: 56 },
+          { id: 'JUG-6', dorsal: 6, label: '6', rol: 'MCD', team: 'A', color: 'vinotinto', x: 50, y: 60 },
+          { id: 'JUG-8', dorsal: 8, label: '8', rol: 'MC', team: 'A', color: 'vinotinto', x: 38, y: 44 },
+          { id: 'JUG-10', dorsal: 10, label: '10', rol: 'MP', team: 'A', color: 'vinotinto', x: 62, y: 44 },
+          { id: 'JUG-7', dorsal: 7, label: '7', rol: 'ED', team: 'A', color: 'vinotinto', x: 88, y: 32 },
+          { id: 'JUG-11', dorsal: 11, label: '11', rol: 'EI', team: 'A', color: 'vinotinto', x: 12, y: 32 },
+          { id: 'JUG-9', dorsal: 9, label: '9', rol: 'DC', team: 'A', color: 'rojo', x: 50, y: 25 },
+        ],
+        balon: { x: 50, y: 58 },
+      },
+    ],
+  },
+  {
+    key: 'salida_lavolpiana',
+    nombre: 'Salida Lavolpiana',
+    filosofia: 'Descenso del pivote (#6) entre los centrales (#4 y #5) formando línea de 3 para impulsar a los laterales (#2 y #3) a zonas de ataque.',
+    foco: 'Superioridad numérica 3v2 en primera fase de iniciación.',
+    badge: 'Iniciación Baja',
+    buildSteps: () => [
+      {
+        descripcion: 'Pivote defensivo incrustado entre centrales, laterales proyectados a mitad de cancha',
+        jugadores: [
+          { id: 'JUG-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 92 },
+          { id: 'JUG-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 26, y: 78 },
+          { id: 'JUG-6', dorsal: 6, label: '6', rol: 'MCD', team: 'A', color: 'vinotinto', x: 50, y: 80 },
+          { id: 'JUG-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 74, y: 78 },
+          { id: 'JUG-3', dorsal: 3, label: '3', rol: 'LI', team: 'A', color: 'vinotinto', x: 10, y: 52 },
+          { id: 'JUG-2', dorsal: 2, label: '2', rol: 'LD', team: 'A', color: 'vinotinto', x: 90, y: 52 },
+          { id: 'JUG-8', dorsal: 8, label: '8', rol: 'MC', team: 'A', color: 'vinotinto', x: 38, y: 58 },
+          { id: 'JUG-10', dorsal: 10, label: '10', rol: 'MP', team: 'A', color: 'vinotinto', x: 62, y: 58 },
+          { id: 'JUG-11', dorsal: 11, label: '11', rol: 'EI', team: 'A', color: 'vinotinto', x: 22, y: 34 },
+          { id: 'JUG-7', dorsal: 7, label: '7', rol: 'ED', team: 'A', color: 'vinotinto', x: 78, y: 34 },
+          { id: 'JUG-9', dorsal: 9, label: '9', rol: 'DC', team: 'A', color: 'rojo', x: 50, y: 28 },
+          { id: 'RIV-9', dorsal: 9, label: '9', rol: 'DEL', team: 'B', color: 'azul', x: 42, y: 72 },
+          { id: 'RIV-11', dorsal: 11, label: '11', rol: 'DEL', team: 'B', color: 'azul', x: 58, y: 72 },
+        ],
+        balon: { x: 50, y: 78 },
+      },
+    ],
+  },
+  {
+    key: 'bloque_medio',
+    nombre: 'Bloque Medio Compacto 1-4-4-2',
+    filosofia: 'Compacidad máxima entre líneas (20-22 metros). Basculación zonal sincronizada que cierra carriles centrales y orienta hacia afuera.',
+    foco: 'Densidad central, coberturas y temporización.',
+    badge: 'Defensa Zonal',
+    buildSteps: () => [
+      {
+        descripcion: 'Línea de 4 defensores + 4 mediocampistas basculando en bloque compacto',
+        jugadores: [
+          { id: 'JUG-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 88 },
+          { id: 'JUG-3', dorsal: 3, label: '3', rol: 'LI', team: 'A', color: 'vinotinto', x: 20, y: 68 },
+          { id: 'JUG-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 40, y: 68 },
+          { id: 'JUG-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 60, y: 68 },
+          { id: 'JUG-2', dorsal: 2, label: '2', rol: 'LD', team: 'A', color: 'vinotinto', x: 80, y: 68 },
+          { id: 'JUG-11', dorsal: 11, label: '11', rol: 'MI', team: 'A', color: 'vinotinto', x: 22, y: 52 },
+          { id: 'JUG-6', dorsal: 6, label: '6', rol: 'MC', team: 'A', color: 'vinotinto', x: 42, y: 52 },
+          { id: 'JUG-8', dorsal: 8, label: '8', rol: 'MC', team: 'A', color: 'vinotinto', x: 58, y: 52 },
+          { id: 'JUG-7', dorsal: 7, label: '7', rol: 'MD', team: 'A', color: 'vinotinto', x: 78, y: 52 },
+          { id: 'JUG-10', dorsal: 10, label: '10', rol: 'SD', team: 'A', color: 'vinotinto', x: 45, y: 38 },
+          { id: 'JUG-9', dorsal: 9, label: '9', rol: 'DC', team: 'A', color: 'rojo', x: 55, y: 38 },
+        ],
+        balon: { x: 50, y: 48 },
+      },
+    ],
+  },
+  {
+    key: 'transicion_rapida',
+    nombre: 'Transición Ofensiva Rápida (Contragolpe)',
+    filosofia: 'Aceleración vertical con 3 o 4 toques hacia extremos tras recuperación en campo propio, buscando la espalda de la zaga rival desorganizada.',
+    foco: 'Pase filtrado veloz y desmarque en ruptura.',
+    badge: 'Contragolpe',
+    buildSteps: () => [
+      {
+        descripcion: 'Robo de balón en tercio medio y pase filtrado a extremos que pican al espacio',
+        jugadores: [
+          { id: 'JUG-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 90 },
+          { id: 'JUG-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 38, y: 72 },
+          { id: 'JUG-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 62, y: 72 },
+          { id: 'JUG-6', dorsal: 6, label: '6', rol: 'MCD', team: 'A', color: 'vinotinto', x: 48, y: 64 },
+          { id: 'JUG-8', dorsal: 8, label: '8', rol: 'MC', team: 'A', color: 'vinotinto', x: 54, y: 55 },
+          { id: 'JUG-11', dorsal: 11, label: '11', rol: 'EI', team: 'A', color: 'vinotinto', x: 18, y: 38 },
+          { id: 'JUG-7', dorsal: 7, label: '7', rol: 'ED', team: 'A', color: 'vinotinto', x: 82, y: 36 },
+          { id: 'JUG-9', dorsal: 9, label: '9', rol: 'DC', team: 'A', color: 'rojo', x: 52, y: 24 },
+        ],
+        balon: { x: 50, y: 62 },
+      },
+    ],
+  },
+  {
+    key: 'repliegue_bajo',
+    nombre: 'Repliegue Bajo y Protección de Área',
+    filosofia: 'Defensa en los últimos 28 metros, blindando el carril central y forzando centros desfavorables para ganar el juego aéreo y segundas jugadas.',
+    foco: 'Bloque defensivo de área y achique de disparos.',
+    badge: 'Bloque Bajo',
+    buildSteps: () => [
+      {
+        descripcion: 'Línea compacta frente al área chica y pivotes tapando la frontal',
+        jugadores: [
+          { id: 'JUG-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 92 },
+          { id: 'JUG-3', dorsal: 3, label: '3', rol: 'LI', team: 'A', color: 'vinotinto', x: 24, y: 80 },
+          { id: 'JUG-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 42, y: 81 },
+          { id: 'JUG-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 58, y: 81 },
+          { id: 'JUG-2', dorsal: 2, label: '2', rol: 'LD', team: 'A', color: 'vinotinto', x: 76, y: 80 },
+          { id: 'JUG-6', dorsal: 6, label: '6', rol: 'MCD', team: 'A', color: 'vinotinto', x: 40, y: 72 },
+          { id: 'JUG-8', dorsal: 8, label: '8', rol: 'MC', team: 'A', color: 'vinotinto', x: 60, y: 72 },
+          { id: 'JUG-9', dorsal: 9, label: '9', rol: 'DC', team: 'A', color: 'rojo', x: 50, y: 55 },
+        ],
+        balon: { x: 50, y: 65 },
+      },
+    ],
+  },
+];
+
+export const EJERCICIOS_TAREAS_PRO = [
+  {
+    key: 'rondo_4v4_3',
+    titulo: 'Rondo Posicional 4v4 + 3 Comodines',
+    categoria_tarea: 'Conservación & Tercer Hombre',
+    objetivo: 'Mantener posesión en cuadrado 20x20m encontrando al comodín interior para descargar a la banda opuesta con máxima velocidad.',
+    duracion: '4 bloques de 4 min',
+    buildSteps: () => [
+      {
+        descripcion: 'Paso 1: Inicio en cuadrado delimitado por 4 conos',
+        jugadores: [
+          { id: 'CONO-1', dorsal: 'C1', label: 'C1', rol: 'CONO', team: 'CONO', color: 'naranja', x: 25, y: 25 },
+          { id: 'CONO-2', dorsal: 'C2', label: 'C2', rol: 'CONO', team: 'CONO', color: 'naranja', x: 75, y: 25 },
+          { id: 'CONO-3', dorsal: 'C3', label: 'C3', rol: 'CONO', team: 'CONO', color: 'naranja', x: 75, y: 75 },
+          { id: 'CONO-4', dorsal: 'C4', label: 'C4', rol: 'CONO', team: 'CONO', color: 'naranja', x: 25, y: 75 },
+          { id: 'JUG-1', dorsal: 2, label: '2', rol: 'LAT', team: 'A', color: 'vinotinto', x: 25, y: 50 },
+          { id: 'JUG-2', dorsal: 3, label: '3', rol: 'LAT', team: 'A', color: 'vinotinto', x: 75, y: 50 },
+          { id: 'JUG-3', dorsal: 4, label: '4', rol: 'EXT', team: 'A', color: 'vinotinto', x: 50, y: 25 },
+          { id: 'JUG-4', dorsal: 5, label: '5', rol: 'EXT', team: 'A', color: 'vinotinto', x: 50, y: 75 },
+          { id: 'COM-1', dorsal: 6, label: '6', rol: 'COM', team: 'A', color: 'oro', x: 50, y: 50 },
+          { id: 'COM-2', dorsal: 8, label: '8', rol: 'COM', team: 'A', color: 'oro', x: 35, y: 35 },
+          { id: 'COM-3', dorsal: 10, label: '10', rol: 'COM', team: 'A', color: 'oro', x: 65, y: 65 },
+          { id: 'DEF-1', dorsal: 4, label: '4', rol: 'PRES', team: 'B', color: 'azul', x: 42, y: 44 },
+          { id: 'DEF-2', dorsal: 5, label: '5', rol: 'PRES', team: 'B', color: 'azul', x: 58, y: 44 },
+          { id: 'DEF-3', dorsal: 7, label: '7', rol: 'PRES', team: 'B', color: 'azul', x: 42, y: 56 },
+          { id: 'DEF-4', dorsal: 9, label: '9', rol: 'PRES', team: 'B', color: 'azul', x: 58, y: 56 },
+        ],
+        balon: { x: 27, y: 50 },
+      },
+      {
+        descripcion: 'Paso 2: Pase al comodín interior #6 y descarga rápida al extremo #3',
+        jugadores: [
+          { id: 'CONO-1', dorsal: 'C1', label: 'C1', rol: 'CONO', team: 'CONO', color: 'naranja', x: 25, y: 25 },
+          { id: 'CONO-2', dorsal: 'C2', label: 'C2', rol: 'CONO', team: 'CONO', color: 'naranja', x: 75, y: 25 },
+          { id: 'CONO-3', dorsal: 'C3', label: 'C3', rol: 'CONO', team: 'CONO', color: 'naranja', x: 75, y: 75 },
+          { id: 'CONO-4', dorsal: 'C4', label: 'C4', rol: 'CONO', team: 'CONO', color: 'naranja', x: 25, y: 75 },
+          { id: 'JUG-1', dorsal: 2, label: '2', rol: 'LAT', team: 'A', color: 'vinotinto', x: 25, y: 50 },
+          { id: 'JUG-2', dorsal: 3, label: '3', rol: 'LAT', team: 'A', color: 'vinotinto', x: 75, y: 50 },
+          { id: 'JUG-3', dorsal: 4, label: '4', rol: 'EXT', team: 'A', color: 'vinotinto', x: 50, y: 25 },
+          { id: 'JUG-4', dorsal: 5, label: '5', rol: 'EXT', team: 'A', color: 'vinotinto', x: 50, y: 75 },
+          { id: 'COM-1', dorsal: 6, label: '6', rol: 'COM', team: 'A', color: 'oro', x: 52, y: 50 },
+          { id: 'COM-2', dorsal: 8, label: '8', rol: 'COM', team: 'A', color: 'oro', x: 40, y: 32 },
+          { id: 'COM-3', dorsal: 10, label: '10', rol: 'COM', team: 'A', color: 'oro', x: 62, y: 62 },
+          { id: 'DEF-1', dorsal: 4, label: '4', rol: 'PRES', team: 'B', color: 'azul', x: 38, y: 48 },
+          { id: 'DEF-2', dorsal: 5, label: '5', rol: 'PRES', team: 'B', color: 'azul', x: 55, y: 46 },
+          { id: 'DEF-3', dorsal: 7, label: '7', rol: 'PRES', team: 'B', color: 'azul', x: 45, y: 54 },
+          { id: 'DEF-4', dorsal: 9, label: '9', rol: 'PRES', team: 'B', color: 'azul', x: 62, y: 54 },
+        ],
+        balon: { x: 73, y: 50 },
+      },
+    ],
+  },
+  {
+    key: 'basculacion_4_def',
+    titulo: 'Basculación Defensiva Línea de 4 + Pivote',
+    categoria_tarea: 'Fase Defensiva Zonal',
+    objetivo: 'Coordinar desplazamientos en bloque según la posición del balón, manteniendo distancias de cobertura y permuta.',
+    duracion: '3 series de 6 min',
+    buildSteps: () => [
+      {
+        descripcion: 'Paso 1: Balón en banda izquierda rival, basculación defensiva hacia carril izquierdo propio',
+        jugadores: [
+          { id: 'POR-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 90 },
+          { id: 'DEF-3', dorsal: 3, label: '3', rol: 'LI', team: 'A', color: 'vinotinto', x: 18, y: 72 },
+          { id: 'DEF-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 34, y: 72 },
+          { id: 'DEF-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 52, y: 72 },
+          { id: 'DEF-2', dorsal: 2, label: '2', rol: 'LD', team: 'A', color: 'vinotinto', x: 70, y: 72 },
+          { id: 'PIV-6', dorsal: 6, label: '6', rol: 'MCD', team: 'A', color: 'vinotinto', x: 38, y: 60 },
+          { id: 'RIV-7', dorsal: 7, label: '7', rol: 'ED', team: 'B', color: 'azul', x: 14, y: 64 },
+          { id: 'RIV-8', dorsal: 8, label: '8', rol: 'MC', team: 'B', color: 'azul', x: 32, y: 52 },
+          { id: 'RIV-10', dorsal: 10, label: '10', rol: 'MP', team: 'B', color: 'azul', x: 55, y: 50 },
+        ],
+        balon: { x: 16, y: 65 },
+      },
+      {
+        descripcion: 'Paso 2: Cambio de orientación rival a banda derecha, basculación sincronizada al lado opuesto',
+        jugadores: [
+          { id: 'POR-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 90 },
+          { id: 'DEF-3', dorsal: 3, label: '3', rol: 'LI', team: 'A', color: 'vinotinto', x: 30, y: 72 },
+          { id: 'DEF-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 48, y: 72 },
+          { id: 'DEF-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 66, y: 72 },
+          { id: 'DEF-2', dorsal: 2, label: '2', rol: 'LD', team: 'A', color: 'vinotinto', x: 82, y: 72 },
+          { id: 'PIV-6', dorsal: 6, label: '6', rol: 'MCD', team: 'A', color: 'vinotinto', x: 62, y: 60 },
+          { id: 'RIV-7', dorsal: 7, label: '7', rol: 'ED', team: 'B', color: 'azul', x: 26, y: 56 },
+          { id: 'RIV-8', dorsal: 8, label: '8', rol: 'MC', team: 'B', color: 'azul', x: 48, y: 48 },
+          { id: 'RIV-10', dorsal: 10, label: '10', rol: 'MP', team: 'B', color: 'azul', x: 84, y: 62 },
+        ],
+        balon: { x: 82, y: 64 },
+      },
+    ],
+  },
+  {
+    key: 'finalizacion_3v2',
+    titulo: 'Transición Ofensiva y Finalización 3 vs 2 + Arquero',
+    categoria_tarea: 'Último Tercio & Remate',
+    objetivo: 'Explotar la superioridad numérica 3v2 en velocidad, fijando central para filtrar o rematar a puerta.',
+    duracion: '5 series de 4 repeticiones',
+    buildSteps: () => [
+      {
+        descripcion: 'Paso 1: Conducción central con 2 extremos desdoblados y 2 defensores replegando',
+        jugadores: [
+          { id: 'POR-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 10 },
+          { id: 'DEF-4', dorsal: 4, label: '4', rol: 'DFC', team: 'B', color: 'azul', x: 42, y: 28 },
+          { id: 'DEF-5', dorsal: 5, label: '5', rol: 'DFC', team: 'B', color: 'azul', x: 58, y: 28 },
+          { id: 'ATA-10', dorsal: 10, label: '10', rol: 'MP', team: 'A', color: 'vinotinto', x: 50, y: 46 },
+          { id: 'ATA-7', dorsal: 7, label: '7', rol: 'ED', team: 'A', color: 'vinotinto', x: 74, y: 42 },
+          { id: 'ATA-11', dorsal: 11, label: '11', rol: 'EI', team: 'A', color: 'vinotinto', x: 26, y: 42 },
+        ],
+        balon: { x: 50, y: 44 },
+      },
+      {
+        descripcion: 'Paso 2: Fijación y pase al desmarque del #7 para remate cruzado al segundo palo',
+        jugadores: [
+          { id: 'POR-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 53, y: 12 },
+          { id: 'DEF-4', dorsal: 4, label: '4', rol: 'DFC', team: 'B', color: 'azul', x: 46, y: 22 },
+          { id: 'DEF-5', dorsal: 5, label: '5', rol: 'DFC', team: 'B', color: 'azul', x: 62, y: 20 },
+          { id: 'ATA-10', dorsal: 10, label: '10', rol: 'MP', team: 'A', color: 'vinotinto', x: 48, y: 32 },
+          { id: 'ATA-7', dorsal: 7, label: '7', rol: 'ED', team: 'A', color: 'vinotinto', x: 68, y: 18 },
+          { id: 'ATA-11', dorsal: 11, label: '11', rol: 'EI', team: 'A', color: 'vinotinto', x: 30, y: 20 },
+        ],
+        balon: { x: 66, y: 19 },
+      },
+    ],
+  },
+  {
+    key: 'salida_presion',
+    titulo: 'Salida de Balón ante Bloque de Presión Alta',
+    categoria_tarea: 'Iniciación del Juego',
+    objetivo: 'Atraer al bloque rival para encontrar al hombre libre en el lado débil o conectar con el mediocentro.',
+    duracion: '4 series de 5 min',
+    buildSteps: () => [
+      {
+        descripcion: 'Centrales abiertos al borde del área grande, portero con balón y lateral alto',
+        jugadores: [
+          { id: 'POR-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 92 },
+          { id: 'DEF-4', dorsal: 4, label: '4', rol: 'DFC', team: 'A', color: 'vinotinto', x: 28, y: 82 },
+          { id: 'DEF-5', dorsal: 5, label: '5', rol: 'DFC', team: 'A', color: 'vinotinto', x: 72, y: 82 },
+          { id: 'LAT-3', dorsal: 3, label: '3', rol: 'LI', team: 'A', color: 'vinotinto', x: 12, y: 62 },
+          { id: 'LAT-2', dorsal: 2, label: '2', rol: 'LD', team: 'A', color: 'vinotinto', x: 88, y: 62 },
+          { id: 'PIV-6', dorsal: 6, label: '6', rol: 'MCD', team: 'A', color: 'vinotinto', x: 50, y: 68 },
+          { id: 'RIV-9', dorsal: 9, label: '9', rol: 'DC', team: 'B', color: 'azul', x: 44, y: 84 },
+          { id: 'RIV-11', dorsal: 11, label: '11', rol: 'EI', team: 'B', color: 'azul', x: 70, y: 74 },
+          { id: 'RIV-7', dorsal: 7, label: '7', rol: 'ED', team: 'B', color: 'azul', x: 30, y: 74 },
+        ],
+        balon: { x: 50, y: 90 },
+      },
+    ],
+  },
+  {
+    key: 'circuito_tiro',
+    titulo: 'Circuito Técnico-Coordinativo + Definición',
+    categoria_tarea: 'Coordinación & Remate',
+    objetivo: 'Coordinación en escalera de velocidad, salto de valla baja, cambio de ritmo entre conos y remate de primera.',
+    duracion: '3 series de 8 repeticiones',
+    buildSteps: () => [
+      {
+        descripcion: 'Materiales dispuestos en hilera: Escalera, vallas, conos y zona de disparo',
+        jugadores: [
+          { id: 'POR-1', dorsal: 1, label: '1', rol: 'POR', team: 'GK', color: 'oro', x: 50, y: 10 },
+          { id: 'ESC-1', dorsal: 'ESC', label: 'ESC', rol: 'ESCALERA', team: 'MAT', color: 'dorado', x: 30, y: 65 },
+          { id: 'VAL-1', dorsal: 'V1', label: 'V1', rol: 'VALLA', team: 'MAT', color: 'celeste', x: 30, y: 52 },
+          { id: 'CON-1', dorsal: 'C1', label: 'C1', rol: 'CONO', team: 'CONO', color: 'naranja', x: 38, y: 42 },
+          { id: 'CON-2', dorsal: 'C2', label: 'C2', rol: 'CONO', team: 'CONO', color: 'naranja', x: 44, y: 35 },
+          { id: 'PAS-10', dorsal: 10, label: '10', rol: 'PASADOR', team: 'A', color: 'oro', x: 70, y: 34 },
+          { id: 'EVAL-9', dorsal: 9, label: '9', rol: 'ATLETA', team: 'A', color: 'rojo', x: 30, y: 75 },
+        ],
+        balon: { x: 68, y: 34 },
+      },
+    ],
+  },
+];
 
 const DEFAULT_PRESET_BY_MODALIDAD = {
   Campo: '11v11_propio',
@@ -165,6 +519,7 @@ export default function TacticalSimulatorModule({
   tacticas = [],
   trabajos = [],
   categories = [],
+  players = [],
   selectedCategoryFilter = '',
   initialTrabajoId = null,
   onCreated,
@@ -176,11 +531,17 @@ export default function TacticalSimulatorModule({
     initialTrabajoId ? String(initialTrabajoId) : ''
   );
 
-  // Acordeón deslizante de submenús: 'opciones' | 'jugadores' | 'rivales' | 'materiales'
-  const [openSection, setOpenSection] = useState('opciones');
+  // Acordeón deslizante de submenús: 'estilos' | 'ejercicios' | 'atletas' | 'opciones' | 'jugadores' | 'rivales' | 'materiales'
+  const [openSection, setOpenSection] = useState('estilos');
 
-  // Pasos 2D + Modos
-  const [pasos, setPasos] = useState(() => buildPresetSteps('11v11_propio', 'jugadores'));
+  // Pasos 2D + Modos: Comienza en Cero (Cancha Limpia)
+  const [pasos, setPasos] = useState(() => [
+    {
+      descripcion: 'Paso 1: Pizarra en Cero (Cancha Limpia)',
+      jugadores: [],
+      balon: { x: 50, y: 50 },
+    },
+  ]);
   const [activeStepIdx, setActiveStepIdx] = useState(0);
   const [selectedTokenId, setSelectedTokenId] = useState('BALON');
   const [toolMode, setToolMode] = useState('move'); // move | pase_corto | pase_largo | recta | zigzag
@@ -297,11 +658,14 @@ export default function TacticalSimulatorModule({
       const fallbackMod =
         modalidadFilter !== 'Todas' ? modalidadFilter : catObj?.modalidad || 'Campo';
       setBoardModalidad(fallbackMod);
-      const presetKey = DEFAULT_PRESET_BY_MODALIDAD[fallbackMod] || '11v11_propio';
-      const nextSteps = buildPresetSteps(presetKey, 'jugadores');
-      setPasos(nextSteps);
-      const firstTok = nextSteps[0]?.jugadores?.[0];
-      setSelectedTokenId(firstTok ? getTokenId(firstTok, 0) : 'BALON');
+      setPasos([
+        {
+          descripcion: 'Paso 1: Pizarra en Cero (Cancha Limpia)',
+          jugadores: [],
+          balon: { x: 50, y: 50 },
+        },
+      ]);
+      setSelectedTokenId('BALON');
     }
   }, [activeTactica, modalidadFilter, categoryFilter, categories, showNewForm, newTactica.modalidad, customScenarioDirty]);
 
@@ -527,6 +891,142 @@ export default function TacticalSimulatorModule({
     }
 
     handleMoveToken(selectedTokenId || 'BALON', x, y);
+  };
+
+  const categoryAthletes = useMemo(() => {
+    if (!categoryFilter) return players;
+    return players.filter((p) => String(p.id_categoria) === String(categoryFilter));
+  }, [players, categoryFilter]);
+
+  const handleClearBoardToZero = () => {
+    setIsPlaying(false);
+    setCustomScenarioDirty(true);
+    setPasos([
+      {
+        descripcion: 'Paso 1: Pizarra en Cero (Cancha Limpia)',
+        jugadores: [],
+        balon: { x: 50, y: 50 },
+      },
+    ]);
+    setSelectedTokenId('BALON');
+    setActiveStepIdx(0);
+    setFeedback('Pizarra táctica limpia en cero. Selecciona atletas, estilo de juego o una tarea profesional.');
+  };
+
+  const handleLoadBaseFormation = () => {
+    setIsPlaying(false);
+    setPlayProgress(0);
+    setActiveStepIdx(0);
+    setCustomScenarioDirty(true);
+    const presetKey = DEFAULT_PRESET_BY_MODALIDAD[boardModalidad] || '11v11_propio';
+    const nextSteps = buildPresetSteps(presetKey, 'jugadores');
+    setPasos(nextSteps);
+    const firstTok = nextSteps[0]?.jugadores?.[0];
+    setSelectedTokenId(firstTok ? getTokenId(firstTok, 0) : 'BALON');
+    setFeedback(`Formación base cargada para Fútbol ${boardModalidad}.`);
+  };
+
+  const handleApplyStyle = (style) => {
+    setIsPlaying(false);
+    setPlayProgress(0);
+    setActiveStepIdx(0);
+    setCustomScenarioDirty(true);
+    const newSteps = style.buildSteps(boardModalidad);
+    setPasos(newSteps);
+    const firstTok = newSteps[0]?.jugadores?.[0];
+    setSelectedTokenId(firstTok ? getTokenId(firstTok, 0) : 'BALON');
+    setFeedback(`Estilo aplicado: "${style.nombre}". ${style.filosofia}`);
+    setNewTactica((prev) => ({
+      ...prev,
+      nombre_sistema: prev.nombre_sistema || style.nombre,
+      descripcion: style.filosofia,
+      pros: style.foco,
+    }));
+  };
+
+  const handleApplyExercise = (exercise) => {
+    setIsPlaying(false);
+    setPlayProgress(0);
+    setActiveStepIdx(0);
+    setCustomScenarioDirty(true);
+    const newSteps = exercise.buildSteps(boardModalidad);
+    setPasos(newSteps);
+    const firstTok = newSteps[0]?.jugadores?.[0];
+    setSelectedTokenId(firstTok ? getTokenId(firstTok, 0) : 'BALON');
+    setFeedback(`Tarea profesional cargada: "${exercise.titulo}" (${exercise.categoria_tarea}).`);
+    setNewTactica((prev) => ({
+      ...prev,
+      nombre_sistema: prev.nombre_sistema || exercise.titulo,
+      descripcion: exercise.objetivo,
+      pros: `Duración: ${exercise.duracion}`,
+    }));
+  };
+
+  const handleAddPlayerFromSquad = (player) => {
+    setIsPlaying(false);
+    setCustomScenarioDirty(true);
+    const curStep = pasos[activeStepIdx] || pasos[0];
+    const curJugadores = getStepTokens(curStep, 'jugadores');
+
+    const pTokId = `ATLETA-${player.id_jugador}`;
+    const exists = curJugadores.some(
+      (j) => String(j.id_jugador) === String(player.id_jugador) || j.id === pTokId
+    );
+    if (exists) {
+      setSelectedTokenId(pTokId);
+      setFeedback(`Atleta ${player.nombre} ya está en la pizarra.`);
+      return;
+    }
+
+    const pos = (player.posicion_principal || 'MED').toUpperCase();
+    let posX = 50;
+    let posY = 55;
+    let team = 'A';
+    let color = 'vinotinto';
+    let rol = pos.slice(0, 3);
+
+    if (pos.includes('POR') || pos.includes('ARQ')) {
+      posX = 50;
+      posY = 88;
+      team = 'GK';
+      color = 'oro';
+      rol = 'POR';
+    } else if (pos.includes('DEF') || pos.includes('CEN') || pos.includes('LAT')) {
+      posX = curJugadores.length % 2 === 0 ? 35 : 65;
+      posY = 72;
+      rol = 'DEF';
+    } else if (pos.includes('DEL') || pos.includes('PUN') || pos.includes('EXT')) {
+      posX = curJugadores.length % 2 === 0 ? 40 : 60;
+      posY = 32;
+      color = 'rojo';
+      rol = 'DEL';
+    } else {
+      posX = 30 + ((curJugadores.length * 15) % 45);
+      posY = 52;
+      rol = 'MED';
+    }
+
+    const newTok = {
+      id: pTokId,
+      id_jugador: player.id_jugador,
+      nombre: player.nombre,
+      dorsal: player.numero_camiseta || curJugadores.length + 1,
+      label: String(player.numero_camiseta || curJugadores.length + 1),
+      rol,
+      team,
+      color,
+      x: posX,
+      y: posY,
+    };
+
+    setPasos((prev) =>
+      prev.map((step) => {
+        const list = getStepTokens(step, 'jugadores');
+        return cloneStepWithTokens(step, 'jugadores', [...list, { ...newTok }]);
+      })
+    );
+    setSelectedTokenId(newTok.id);
+    setFeedback(`Atleta ${player.nombre} (#${newTok.dorsal} • ${rol}) posicionado en la pizarra.`);
   };
 
   const handleApplyPreset = (presetKey) => {
@@ -959,6 +1459,69 @@ export default function TacticalSimulatorModule({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Columna Izquierda: Tablero 2D + Controles Play y Pasos */}
         <div className="lg:col-span-7 card-fenix p-4 space-y-3">
+          {/* Barra de Acciones Rápidas: Pizarra en Cero, Formación Base, Estilos Pro, Tareas Pro, Atletas */}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-[#121216] border border-neutral-800 rounded-xl">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleClearBoardToZero}
+                className="px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-neutral-200 inline-flex items-center gap-1.5 border border-neutral-700 transition"
+                title="Limpiar todas las fichas e iniciar la pizarra en cero"
+              >
+                <Eraser className="w-3.5 h-3.5 text-amber-400" />
+                <span>Pizarra en Cero</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleLoadBaseFormation}
+                className="px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-neutral-200 inline-flex items-center gap-1.5 border border-neutral-700 transition"
+                title="Cargar formación base según la modalidad activa"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>Formación Base</span>
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setOpenSection('estilos')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 border transition ${
+                  openSection === 'estilos'
+                    ? 'bg-amber-500 text-black border-amber-400 shadow'
+                    : 'bg-[#181820] text-amber-300 border-amber-500/40 hover:bg-amber-500/20'
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Estilos Pro</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpenSection('ejercicios')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 border transition ${
+                  openSection === 'ejercicios'
+                    ? 'bg-rojo-fuego text-white border-rojo-fuego shadow'
+                    : 'bg-[#181820] text-red-300 border-red-500/40 hover:bg-red-500/20'
+                }`}
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                <span>Tareas Pro</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpenSection('atletas')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 border transition ${
+                  openSection === 'atletas'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow'
+                    : 'bg-[#181820] text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/20'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Atletas ({categoryAthletes.length})</span>
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-2 bg-[#141418] border border-neutral-800 rounded-xl p-2.5">
             <div className="flex flex-wrap items-center gap-1">
               {pasos.map((_, idx) => (
@@ -1106,6 +1669,146 @@ export default function TacticalSimulatorModule({
 
         {/* Columna Derecha: Módulos Deslizantes Ordenados */}
         <div className="lg:col-span-5 space-y-3">
+          {/* Submenú: Estilos de Juego Profesionales */}
+          <AccordionSection
+            title="Estilos de Juego Profesionales"
+            icon={Compass}
+            badge={`${ESTILOS_JUEGO_PRO.length} Estilos`}
+            isOpen={openSection === 'estilos'}
+            onToggle={() => setOpenSection(openSection === 'estilos' ? '' : 'estilos')}
+          >
+            <p className="text-[11px] text-texto-secundario">
+              Modelos tácticos de élite mundial para aplicar en cancha con un solo clic:
+            </p>
+            <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+              {ESTILOS_JUEGO_PRO.map((est) => (
+                <div
+                  key={est.key}
+                  className="bg-[#0f0f13] border border-neutral-800 hover:border-amber-500/50 rounded-xl p-3 space-y-1.5 transition"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-extrabold text-xs text-white flex items-center gap-1.5">
+                      <Flame className="w-3.5 h-3.5 text-rojo-fuego" /> {est.nombre}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-vinotinto/60 border border-rojo-fuego text-[9px] font-bold text-amber-300">
+                      {est.badge}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-neutral-300 leading-relaxed">{est.filosofia}</p>
+                  <p className="text-[9px] text-texto-secundario italic">Foco: {est.foco}</p>
+                  <div className="pt-1 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleApplyStyle(est)}
+                      className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[10px] inline-flex items-center gap-1 transition"
+                    >
+                      <Zap className="w-3 h-3" /> Aplicar en Pizarra
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </AccordionSection>
+
+          {/* Submenú: Ejercicios y Tareas Profesionales */}
+          <AccordionSection
+            title="Tareas y Ejercicios Profesionales"
+            icon={Trophy}
+            badge={`${EJERCICIOS_TAREAS_PRO.length} Tareas`}
+            isOpen={openSection === 'ejercicios'}
+            onToggle={() => setOpenSection(openSection === 'ejercicios' ? '' : 'ejercicios')}
+          >
+            <p className="text-[11px] text-texto-secundario">
+              Ejercicios de entrenamiento profesional con conos, defensores y animación preconfigurados:
+            </p>
+            <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+              {EJERCICIOS_TAREAS_PRO.map((ej) => (
+                <div
+                  key={ej.key}
+                  className="bg-[#0f0f13] border border-neutral-800 hover:border-rojo-fuego/60 rounded-xl p-3 space-y-1.5 transition"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-extrabold text-xs text-white">{ej.titulo}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-950/80 border border-blue-500/50 text-[9px] font-bold text-cyan-300">
+                      {ej.categoria_tarea}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-neutral-300 leading-relaxed">{ej.objetivo}</p>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[9px] text-amber-300 font-semibold">⏱ {ej.duracion}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyExercise(ej)}
+                      className="px-3 py-1 rounded-lg bg-rojo-fuego hover:bg-red-600 text-white font-extrabold text-[10px] inline-flex items-center gap-1 transition"
+                    >
+                      <Play className="w-3 h-3" /> Cargar Tarea
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </AccordionSection>
+
+          {/* Submenú: Atletas de la Categoría */}
+          <AccordionSection
+            title={`Atletas de la Categoría (${categoryAthletes.length})`}
+            icon={UserCheck}
+            badge={`${categoryAthletes.length} Atletas`}
+            isOpen={openSection === 'atletas'}
+            onToggle={() => setOpenSection(openSection === 'atletas' ? '' : 'atletas')}
+          >
+            <p className="text-[11px] text-texto-secundario">
+              Haz clic en cualquier atleta para incorporarlo directamente a la pizarra táctica:
+            </p>
+            {categoryAthletes.length === 0 ? (
+              <div className="p-4 text-center text-xs text-texto-secundario bg-[#0f0f13] rounded-lg">
+                No hay atletas registrados en esta categoría aún.
+              </div>
+            ) : (
+              <div className="max-h-[360px] overflow-y-auto space-y-1.5 pr-1">
+                {categoryAthletes.map((pl) => {
+                  const pTokId = `ATLETA-${pl.id_jugador}`;
+                  const isOnPitch = currentTokens.some(
+                    (j) => String(j.id_jugador) === String(pl.id_jugador) || j.id === pTokId
+                  );
+                  return (
+                    <div
+                      key={pl.id_jugador}
+                      className={`flex items-center justify-between gap-2 p-2 rounded-lg border text-xs transition ${
+                        isOnPitch
+                          ? 'bg-vinotinto/30 border-rojo-fuego/60'
+                          : 'bg-[#0f0f13] border-neutral-800 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center font-extrabold text-[10px] text-white shrink-0">
+                          {pl.numero_camiseta || '•'}
+                        </span>
+                        <div className="truncate">
+                          <p className="font-bold text-white truncate text-[11px]">{pl.nombre}</p>
+                          <span className="text-[9px] text-texto-secundario uppercase">
+                            {pl.posicion_principal || 'Jugador'}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddPlayerFromSquad(pl)}
+                        className={`px-2.5 py-1 rounded text-[10px] font-bold shrink-0 transition ${
+                          isOnPitch
+                            ? 'bg-emerald-500/20 border border-emerald-500 text-emerald-300'
+                            : 'bg-neutral-800 hover:bg-vinotinto text-white border border-neutral-700'
+                        }`}
+                      >
+                        {isOnPitch ? 'En Cancha ✓' : '+ A Cancha'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </AccordionSection>
+
           {/* Submenú 1: Opciones de Movimiento y Pases */}
           <AccordionSection
             title="Opciones y Movimientos"

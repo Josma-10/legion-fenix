@@ -473,9 +473,9 @@ export default function Pitch2DBoard({
             >
               {tok.dorsal ?? tok.label ?? idx + 1}
             </div>
-            {tok.rol && (
-              <span className="mt-0.5 px-1 rounded bg-black/80 text-[8px] sm:text-[9px] font-bold text-white leading-tight">
-                {tok.rol}
+            {(tok.nombre || tok.rol) && (
+              <span className="mt-0.5 px-1.5 py-0.2 rounded bg-black/85 border border-white/20 text-[8px] sm:text-[9px] font-bold text-white leading-tight max-w-[80px] truncate text-center shadow">
+                {tok.nombre ? tok.nombre.split(' ')[0] : tok.rol}
               </span>
             )}
           </div>

@@ -12,9 +12,21 @@ export default function LoginForm({ onError, onSuccessRedirect }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     if (onError) onError('');
+
+    const cleanUsername = (loginForm.username || '').replace(/\s+/g, '');
+    const cleanPassword = (loginForm.password || '').replace(/\s+/g, '');
+
+    if (/\s/.test(loginForm.username) || /\s/.test(loginForm.password)) {
+      if (onError) onError('No se permiten espacios en blanco en el usuario ni en la contraseña.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.post('/auth/login', loginForm);
+      const res = await api.post('/auth/login', {
+        username: cleanUsername,
+        password: cleanPassword,
+      });
       saveSession(res.data.token, res.data.user);
       const target = getHomeRouteForRole(res.data.user.rol);
       if (onSuccessRedirect) onSuccessRedirect(target);
@@ -31,16 +43,18 @@ export default function LoginForm({ onError, onSuccessRedirect }) {
     <form onSubmit={handleLogin} className="space-y-4">
       <div>
         <label className="block text-xs font-semibold text-texto-secundario mb-1">
-          Correo Electrónico o Usuario
+          Correo Electrónico o Usuario <span className="text-[10px] text-rojo-fuego">(sin espacios)</span>
         </label>
         <div className="relative">
           <Mail className="w-4 h-4 text-neutral-500 absolute left-3 top-3" />
           <input
             type="text"
             className="input-fenix pl-10"
-            placeholder="tu@correo.com"
+            placeholder="admin o tu@correo.com"
             value={loginForm.username}
-            onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+            onChange={(e) =>
+              setLoginForm({ ...loginForm, username: e.target.value.replace(/\s+/g, '') })
+            }
             autoComplete="username"
             required
           />
@@ -49,7 +63,7 @@ export default function LoginForm({ onError, onSuccessRedirect }) {
 
       <div>
         <label className="block text-xs font-semibold text-texto-secundario mb-1">
-          Contraseña
+          Contraseña <span className="text-[10px] text-rojo-fuego">(sin espacios)</span>
         </label>
         <div className="relative">
           <Lock className="w-4 h-4 text-neutral-500 absolute left-3 top-3" />
@@ -58,7 +72,9 @@ export default function LoginForm({ onError, onSuccessRedirect }) {
             className="input-fenix pl-10 pr-10"
             placeholder="••••••••"
             value={loginForm.password}
-            onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+            onChange={(e) =>
+              setLoginForm({ ...loginForm, password: e.target.value.replace(/\s+/g, '') })
+            }
             autoComplete="current-password"
             required
           />

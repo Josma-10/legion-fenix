@@ -26,6 +26,11 @@ body {
   font-family: 'Barlow Condensed', 'Inter', sans-serif;
 }
 
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Scrollbar institucional oscuro */
 ::-webkit-scrollbar {
   width: 8px;

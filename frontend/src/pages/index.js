@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import HeroSliderModule from '../modules/publico/HeroSliderModule';
 import DisciplinasGrid from '../modules/categorias/DisciplinasGrid';
 import FixturePublicModule from '../modules/publico/FixturePublicModule';
+import TarifasCondicionesModule from '../modules/publico/TarifasCondicionesModule';
 import TiendaOficialModule from '../modules/tienda/TiendaOficialModule';
 import NoticiasMuralModule from '../modules/publico/NoticiasMuralModule';
 import HinchadaMediaSocialModule from '../modules/publico/HinchadaMediaSocialModule';
@@ -48,6 +49,8 @@ export default function HomePublico() {
           categories={data.categories}
           onSelectDisciplineFixture={setModalidadFilter}
         />
+
+        <TarifasCondicionesModule />
 
         <FixturePublicModule
           fixtures={data.fixtures}

@@ -66,7 +66,7 @@ export default function Trabajos3DSchedulerModule({
   const [trabajos, setTrabajos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeDisciplineTab, setActiveDisciplineTab] = useState('Todas');
+  const [activeDisciplineTab, setActiveDisciplineTab] = useState('Campo');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [filterDate, setFilterDate] = useState(todayStr);
   const [showAllDates, setShowAllDates] = useState(true);
@@ -316,73 +316,91 @@ export default function Trabajos3DSchedulerModule({
 
       {/* Selector de Disciplina, Todas las Categorías y Disponibilidad en Tiempo Real */}
       <div className="card-fenix p-4 sm:p-5 border-l-4 border-l-rojo-fuego space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-widest text-rojo-fuego">
-              Modalidades y Disponibilidad en Tiempo Real
-            </p>
-            <h3 className="font-display text-lg font-bold text-white">
-              FÚTBOL CAMPO, FÚTBOL 7 Y FÚTBOL SALA ({categories.length} Categorías)
-            </h3>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <button
-              type="button"
-              onClick={() => handleSelectDiscipline('Todas')}
-              className={`px-3 py-1.5 rounded-lg font-bold border transition ${
-                activeDisciplineTab === 'Todas'
-                  ? 'bg-vinotinto border-rojo-fuego text-white'
-                  : 'bg-[#151515] border-neutral-800 text-texto-secundario hover:text-white'
-              }`}
-            >
-              Todas ({categories.length})
-            </button>
-            {DISCIPLINES.map((d) => (
-              <button
-                key={d.key}
-                type="button"
-                onClick={() => handleSelectDiscipline(d.key)}
-                className={`px-3 py-1.5 rounded-lg font-bold border transition ${
-                  activeDisciplineTab === d.key
-                    ? 'bg-vinotinto border-rojo-fuego text-white'
-                    : 'bg-[#151515] border-neutral-800 text-texto-secundario hover:text-white'
-                }`}
-              >
-                {d.short}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          {visibleCategoryGroups.map((group) => (
-            <div
-              key={group.key}
-              className="bg-[#141417] border border-neutral-800 rounded-xl p-2.5 flex flex-wrap items-center gap-1.5"
-            >
-              <span className="px-2 py-1 rounded bg-vinotinto/40 border border-vinotinto text-[10px] font-extrabold text-white uppercase mr-1">
-                {group.short} ({group.items.length})
-              </span>
-              {group.items.map((cat) => {
-                const isSelectedCat = String(selectedCategoryId) === String(cat.id_categoria);
-                return (
-                  <button
-                    key={cat.id_categoria}
-                    type="button"
-                    onClick={() => handleSelectCategoryPill(cat)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold border transition ${
-                      isSelectedCat
-                        ? 'bg-rojo-fuego border-white text-white shadow'
-                        : 'bg-[#1b1b20] border-neutral-800 text-neutral-300 hover:border-rojo-fuego/70 hover:text-white'
-                    }`}
-                  >
-                    {cat.nombre}
-                  </button>
-                );
-              })}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 pb-2">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-widest text-rojo-fuego">
+                Modalidad y Disciplina Principal
+              </p>
+              <h3 className="font-display text-lg font-bold text-white">
+                Selecciona la Cancha / Modalidad
+              </h3>
             </div>
-          ))}
+            <span className="text-xs text-texto-secundario">
+              Elige una disciplina para ver solo sus 9 categorías correspondientes
+            </span>
+          </div>
+
+          {/* 3 Botones Principales */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {DISCIPLINES.map((d) => {
+              const isActive = activeDisciplineTab === d.key;
+              return (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => handleSelectDiscipline(d.key)}
+                  className={`p-3.5 rounded-xl font-bold border transition flex items-center justify-between text-sm ${
+                    isActive
+                      ? 'bg-gradient-to-r from-vinotinto to-rojo-fuego border-white/40 text-white shadow-fenix scale-[1.01]'
+                      : 'bg-[#151518] border-neutral-800 text-neutral-300 hover:border-vinotinto hover:text-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    {d.key === 'Campo' && '⚽'}
+                    {d.key === 'F7' && '🥅'}
+                    {d.key === 'Sala' && '⚡'}
+                    {d.label}
+                  </span>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-black/40 text-neutral-200 font-extrabold">
+                    9 Cat.
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Submenú Exclusivo: Solo las 9 categorías de la disciplina seleccionada */}
+          {groupedCategories
+            .filter((g) => g.key === activeDisciplineTab)
+            .map((group) => (
+              <div
+                key={group.key}
+                className="bg-[#141418] border border-neutral-800 rounded-2xl p-4 space-y-2.5"
+              >
+                <div className="flex items-center justify-between text-xs px-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-rojo-fuego flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5" /> Categorías de {group.label}:
+                  </span>
+                  <span className="text-[11px] text-texto-secundario">
+                    Espacio habitual: {group.quadrant}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
+                  {group.items.map((cat) => {
+                    const isSelectedCat = String(selectedCategoryId) === String(cat.id_categoria);
+                    return (
+                      <button
+                        key={cat.id_categoria}
+                        type="button"
+                        onClick={() => handleSelectCategoryPill(cat)}
+                        className={`p-2.5 rounded-xl text-xs font-bold border transition flex flex-col items-center justify-center gap-0.5 ${
+                          isSelectedCat
+                            ? 'bg-rojo-fuego border-white text-white shadow-fenix'
+                            : 'bg-[#1b1b22] border-neutral-800 text-neutral-300 hover:border-rojo-fuego/60 hover:text-white'
+                        }`}
+                      >
+                        <span className="text-xs">{cat.nombre}</span>
+                        <span className="text-[9px] opacity-75 font-normal">
+                          {cat.edad_max >= 90 ? '21+ años' : `${cat.edad_min}–${cat.edad_max}a`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
         </div>
 
         <div className="bg-[#131317] border border-neutral-800 rounded-xl p-3.5 space-y-3">

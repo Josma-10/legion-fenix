@@ -85,6 +85,13 @@ export default function Navbar({ subtitle = null }) {
             Categorías
           </Link>
 
+          <Link
+            href="/#tarifas"
+            className="px-3 py-2 rounded-lg text-texto-secundario hover:text-white hover:bg-neutral-800/70 transition"
+          >
+            Tarifas
+          </Link>
+
           {canSeeParents && (
             <Link
               href="/portal-padres"
@@ -194,6 +201,13 @@ export default function Navbar({ subtitle = null }) {
             className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-vinotinto/40"
           >
             Categorías y Disciplinas
+          </Link>
+          <Link
+            href="/#tarifas"
+            onClick={() => setMenuOpen(false)}
+            className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-vinotinto/40 text-amber-300"
+          >
+            Tarifas Oficiales (€)
           </Link>
           {canSeeParents && (
             <Link

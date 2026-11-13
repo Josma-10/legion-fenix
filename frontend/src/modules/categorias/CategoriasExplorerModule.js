@@ -251,9 +251,189 @@ export default function CategoriasExplorerModule({ user = null, initialCategoryI
         </form>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Grupos de Categorías */}
-        <div className={`${selectedDetail ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-6`}>
+      {/* Vista Exclusiva de la Categoría Seleccionada O Vista de Todas las Categorías */}
+      {selectedDetail ? (
+        <div className="space-y-6 w-full animate-fadeIn">
+          {/* Barra Superior con Botón de Regreso */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#15151a] border border-neutral-800 rounded-2xl p-4 sm:p-5 shadow-fenix">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDetail(null);
+                  setSelectedPlayerCard(null);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-vinotinto/50 hover:bg-vinotinto border border-vinotinto text-xs font-bold text-white inline-flex items-center gap-2 transition"
+              >
+                ← Volver a Todas las Categorías
+              </button>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-rojo-fuego">
+                  {selectedDetail.category.disciplina}
+                </span>
+                <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white">
+                  {selectedDetail.category.nombre}
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="px-3 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-200">
+                {selectedDetail.category.cuadrante_asignado}
+              </span>
+              <span className="px-3 py-1 rounded-full bg-rojo-fuego/20 border border-rojo-fuego/40 text-rojo-fuego font-bold">
+                {selectedDetail.category.edad_max >= 90
+                  ? '21+ años'
+                  : `${selectedDetail.category.edad_min} a ${selectedDetail.category.edad_max} años`}
+              </span>
+              <span className="px-3 py-1 rounded-full bg-vinotinto text-white font-bold">
+                {selectedDetail.players?.length || 0} Atletas Inscritos
+              </span>
+            </div>
+          </div>
+
+          {loadingDetail ? (
+            <div className="card-fenix p-12 text-center text-texto-secundario text-sm">
+              Cargando información exclusiva de la categoría...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              {/* Plantilla de Jugadores (Ocupa 2 Columnas) */}
+              <div className="lg:col-span-2 card-fenix p-5 sm:p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                  <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
+                    <Users className="w-5 h-5 text-rojo-fuego" />
+                    Plantilla Oficial de {selectedDetail.category.nombre} ({selectedDetail.players.length})
+                  </h3>
+                  <Link
+                    href="/login"
+                    className="text-xs font-bold text-rojo-fuego hover:text-white inline-flex items-center gap-1 transition"
+                  >
+                    Inscribir Atleta <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                {selectedDetail.players.length === 0 ? (
+                  <div className="bg-[#121215] border border-dashed border-neutral-800 rounded-xl p-8 text-center space-y-2">
+                    <Users className="w-8 h-8 text-neutral-600 mx-auto" />
+                    <p className="text-sm font-semibold text-neutral-300">
+                      No hay atletas inscritos aún en esta categoría.
+                    </p>
+                    <p className="text-xs text-texto-secundario">
+                      Los atletas registrados en {selectedDetail.category.nombre} aparecerán automáticamente aquí.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {selectedDetail.players.map((p) => {
+                      const openPlayerCard = () =>
+                        setSelectedPlayerCard({
+                          ...p,
+                          categoria_modalidad: selectedDetail.category.modalidad,
+                          categoria_nombre: selectedDetail.category.nombre,
+                        });
+                      return (
+                        <div
+                          key={p.id_jugador}
+                          onClick={openPlayerCard}
+                          className="bg-[#141418] border border-neutral-800 hover:border-vinotinto rounded-xl p-3.5 flex items-center justify-between gap-3 cursor-pointer transition group shadow-sm hover:shadow-fenix"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="w-10 h-10 rounded-xl bg-vinotinto/30 border border-vinotinto flex items-center justify-center font-display font-extrabold text-base text-white">
+                              #{p.dorsal || '--'}
+                            </span>
+                            <div>
+                              <p className="text-sm font-bold text-white group-hover:text-rojo-fuego transition">
+                                {p.nombre} {p.apellido}
+                              </p>
+                              <p className="text-xs text-texto-secundario">
+                                {p.posicion_habitual} • Pie: {p.pierna_habil || 'Derecho'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            {p.puntaje_global && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950/70 border border-cyan-600/50 text-cyan-200">
+                                {Number(p.puntaje_global).toFixed(1)}/10
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPlayerCard();
+                              }}
+                              className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md bg-vinotinto/40 hover:bg-vinotinto border border-vinotinto text-white transition"
+                            >
+                              <Eye className="w-3 h-3" /> Ficha
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Calendario de Partidos y Horarios (1 Columna) */}
+              <div className="space-y-6">
+                <div className="card-fenix p-5 space-y-4">
+                  <h3 className="font-display text-lg font-bold text-white flex items-center gap-2 border-b border-neutral-800 pb-3">
+                    <Calendar className="w-4 h-4 text-rojo-fuego" />
+                    Partidos Oficiales ({selectedDetail.fixtures.length})
+                  </h3>
+
+                  {selectedDetail.fixtures.length === 0 ? (
+                    <p className="text-xs text-texto-secundario">
+                      Sin compromisos oficiales programados actualmente para {selectedDetail.category.nombre}.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {selectedDetail.fixtures.map((f) => (
+                        <div
+                          key={f.id_partido}
+                          className="bg-[#141418] border border-neutral-800 rounded-xl p-3.5 text-xs space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm text-white">vs {f.rival}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-rojo-fuego/20 text-rojo-fuego font-bold">
+                              {f.estado}
+                            </span>
+                          </div>
+                          <p className="text-xs text-neutral-300 flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-rojo-fuego" />
+                            {new Date(f.fecha_hora).toLocaleString('es-VE', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </p>
+                          <p className="text-xs text-texto-secundario flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-rojo-fuego" /> {f.sede}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="card-fenix p-5 space-y-3 bg-[#111115] border-vinotinto/40">
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-rojo-fuego">
+                    Espacio de Entrenamiento Asignado
+                  </h4>
+                  <p className="text-sm font-bold text-white">
+                    {selectedDetail.category.cuadrante_asignado}
+                  </p>
+                  <p className="text-xs text-texto-secundario">
+                    La división metodológica de canchas garantiza que los atletas de {selectedDetail.category.nombre} tengan prioridad en su espacio oficial.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Vista General con los 3 Grupos de Disciplinas */
+        <div className="space-y-6">
           {grouped.map((disc) => (
             <div key={disc.key} className="card-fenix p-5 space-y-4 border-t-4 border-t-vinotinto">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -268,194 +448,47 @@ export default function CategoriasExplorerModule({ user = null, initialCategoryI
                 </span>
               </div>
 
-              <div
-                className={`grid gap-3 ${
-                  selectedDetail ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9'
-                }`}
-              >
-                {disc.items.map((cat) => {
-                  const isSelected = selectedDetail?.category?.id_categoria === cat.id_categoria;
-                  return (
-                    <div
-                      key={cat.id_categoria}
-                      onClick={() => loadCategoryDetail(cat.id_categoria)}
-                      className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between gap-2 ${
-                        isSelected
-                          ? 'bg-vinotinto/30 border-rojo-fuego shadow-fenix'
-                          : 'bg-[#151515] border-neutral-800 hover:border-vinotinto'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-1">
-                        <p className="font-bold text-sm text-white leading-tight">{cat.nombre}</p>
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditModal(cat);
-                            }}
-                            className="text-neutral-400 hover:text-white p-0.5"
-                            title="Editar categoría"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-texto-secundario">
-                        {cat.edad_max >= 90 ? '21+ años' : `${cat.edad_min}–${cat.edad_max} años`}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
+                {disc.items.map((cat) => (
+                  <div
+                    key={cat.id_categoria}
+                    onClick={() => loadCategoryDetail(cat.id_categoria)}
+                    className="p-3.5 rounded-xl border cursor-pointer transition flex flex-col justify-between gap-2 bg-[#151515] border-neutral-800 hover:border-rojo-fuego hover:bg-vinotinto/20 group"
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="font-bold text-sm text-white group-hover:text-rojo-fuego transition leading-tight">
+                        {cat.nombre}
                       </p>
-                      <div className="pt-2 border-t border-neutral-800/80 flex items-center justify-between text-[10px]">
-                        <span className="text-neutral-300 flex items-center gap-1">
-                          <Users className="w-3 h-3 text-rojo-fuego" /> {cat.total_atletas || 0}
-                        </span>
-                        <span className="text-neutral-400">{cat.proximos_partidos || 0} PJ</span>
-                      </div>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(cat);
+                          }}
+                          className="text-neutral-400 hover:text-white p-0.5"
+                          title="Editar categoría"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
-                  );
-                })}
+                    <p className="text-[11px] text-texto-secundario">
+                      {cat.edad_max >= 90 ? '21+ años' : `${cat.edad_min}–${cat.edad_max} años`}
+                    </p>
+                    <div className="pt-2 border-t border-neutral-800/80 flex items-center justify-between text-[10px]">
+                      <span className="text-neutral-300 flex items-center gap-1">
+                        <Users className="w-3 h-3 text-rojo-fuego" /> {cat.total_atletas || 0}
+                      </span>
+                      <span className="text-neutral-400">{cat.proximos_partidos || 0} PJ</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
-
-        {/* Panel Detalle de Categoría Seleccionada */}
-        {selectedDetail && (
-          <aside className="lg:col-span-5 card-fenix p-5 border-vinotinto space-y-5 sticky top-20">
-            <div className="flex items-start justify-between gap-2 border-b border-neutral-800 pb-3">
-              <div>
-                <span className="text-[11px] font-bold uppercase text-rojo-fuego">
-                  {selectedDetail.category.disciplina}
-                </span>
-                <h3 className="font-display text-2xl font-extrabold text-white">
-                  {selectedDetail.category.nombre}
-                </h3>
-                <p className="text-xs text-texto-secundario">
-                  {selectedDetail.category.cuadrante_asignado} •{' '}
-                  {selectedDetail.category.edad_max >= 90
-                    ? '21+ años'
-                    : `${selectedDetail.category.edad_min} a ${selectedDetail.category.edad_max} años`}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setSelectedDetail(null);
-                  setSelectedPlayerCard(null);
-                }}
-                className="p-1.5 rounded bg-neutral-800 hover:bg-rojo-fuego"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {loadingDetail ? (
-              <p className="text-xs text-texto-secundario py-6 text-center">Cargando plantilla...</p>
-            ) : (
-              <>
-                <div className="space-y-2.5">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-300 flex items-center justify-between">
-                    <span>Plantilla Inscrita ({selectedDetail.players.length})</span>
-                    <Link href="/login" className="text-rojo-fuego hover:underline inline-flex items-center gap-1">
-                      Inscribir <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </h4>
-
-                  {selectedDetail.players.length === 0 ? (
-                    <p className="text-xs text-texto-secundario bg-[#151515] border border-neutral-800 rounded-lg p-3">
-                      No hay atletas activos asignados aún en esta categoría.
-                    </p>
-                  ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                      {selectedDetail.players.map((p) => {
-                        const openPlayerCard = () =>
-                          setSelectedPlayerCard({
-                            ...p,
-                            categoria_modalidad: selectedDetail.category.modalidad,
-                            categoria_nombre: selectedDetail.category.nombre,
-                          });
-                        return (
-                          <div
-                            key={p.id_jugador}
-                            onClick={openPlayerCard}
-                            className="bg-[#151515] border border-neutral-800 hover:border-vinotinto rounded-lg p-2.5 flex items-center justify-between gap-2 cursor-pointer transition group"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <span className="w-8 h-8 rounded-lg bg-vinotinto/40 border border-vinotinto flex items-center justify-center font-display font-extrabold text-sm text-white">
-                                #{p.dorsal || '--'}
-                              </span>
-                              <div>
-                                <p className="text-xs font-bold text-white group-hover:text-cyan-300 transition">
-                                  {p.nombre} {p.apellido}
-                                </p>
-                                <p className="text-[10px] text-texto-secundario">
-                                  {p.posicion_habitual} • Pie: {p.pierna_habil}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              {p.puntaje_global && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950/70 border border-cyan-600/50 text-cyan-200">
-                                  {Number(p.puntaje_global).toFixed(1)}/10
-                                </span>
-                              )}
-                              {p.estado_cuenta && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-neutral-800 text-neutral-200">
-                                  {p.estado_cuenta}
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openPlayerCard();
-                                }}
-                                className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded bg-vinotinto/40 hover:bg-vinotinto border border-vinotinto text-white"
-                              >
-                                <Eye className="w-3 h-3" /> Ver Info
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2.5 pt-2 border-t border-neutral-800">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-neutral-300">
-                    Partidos de la Categoría ({selectedDetail.fixtures.length})
-                  </h4>
-                  {selectedDetail.fixtures.length === 0 ? (
-                    <p className="text-xs text-texto-secundario">Sin compromisos publicados para esta categoría.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {selectedDetail.fixtures.map((f) => (
-                        <div key={f.id_partido} className="bg-[#151515] border border-neutral-800 rounded-lg p-3 text-xs space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-white">vs {f.rival}</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-rojo-fuego/20 text-rojo-fuego font-bold">
-                              {f.estado}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-texto-secundario flex items-center gap-1.5">
-                            <Calendar className="w-3 h-3 text-rojo-fuego" />
-                            {new Date(f.fecha_hora).toLocaleString('es-VE', {
-                              dateStyle: 'medium',
-                              timeStyle: 'short',
-                            })}
-                          </p>
-                          <p className="text-[11px] text-texto-secundario flex items-center gap-1.5">
-                            <MapPin className="w-3 h-3 text-rojo-fuego" /> {f.sede}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </aside>
-        )}
-      </div>
+      )}
 
       {/* Modal Ficha Deportiva y Valores del Jugador */}
       {selectedPlayerCard && (

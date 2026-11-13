@@ -525,6 +525,56 @@ exports.createEvaluation = async (req, res) => {
   }
 };
 
+exports.createBatchEvaluations = async (req, res) => {
+  const { test_type, test_name, records } = req.body;
+  if (!Array.isArray(records) || records.length === 0) {
+    return res.status(400).json({ error: 'Lista de registros de evaluación requerida.' });
+  }
+
+  try {
+    const results = [];
+    const fecha = req.body.fecha_evaluacion || new Date().toISOString().slice(0, 10);
+
+    for (const r of records) {
+      if (!r.id_jugador) continue;
+      const nota = Math.min(10, Math.max(1, Number(r.nota || 7.0)));
+      const pct = Math.min(100, Math.max(10, Number(r.porcentaje || Math.round(nota * 10))));
+
+      const created = await entrenadoresModel.createEvaluacion({
+        id_jugador: Number(r.id_jugador),
+        id_evaluador: req.user.id,
+        fecha_evaluacion: fecha,
+        fisica_velocidad: test_name?.includes('Velocidad') ? nota : 7.0,
+        fisica_resistencia: test_name?.includes('Resistencia') ? nota : 7.0,
+        fisica_fuerza: test_name?.includes('Fuerza') || test_name?.includes('Salto') ? nota : 7.0,
+        tecnica_control: test_name?.includes('Control') ? nota : 7.0,
+        tecnica_pase: test_name?.includes('Pase') ? nota : 7.0,
+        tecnica_definicion: test_name?.includes('Definición') || test_name?.includes('Remate') ? nota : 7.0,
+        coordinativa_agilidad: test_name?.includes('Agilidad') || test_name?.includes('Illinois') ? nota : 7.0,
+        coordinativa_equilibrio: test_name?.includes('Equilibrio') ? nota : 7.0,
+        coordinativa_ritmo: test_name?.includes('Coordinación') || test_name?.includes('Escalera') ? nota : 7.0,
+        score_fisica: test_type === 'FISICA' ? nota : 7.0,
+        score_tecnica: test_type === 'TECNICA' ? nota : 7.0,
+        score_coordinativa: test_type === 'COORDINATIVA' ? nota : 7.0,
+        puntaje_global: nota,
+        porcentaje_global: pct,
+        fortalezas: `${test_name || 'Prueba'}: ${r.clasificacion || 'Avanzado'} (${r.valor || ''} ${r.unidad || ''})`,
+        debilidades: 'Mantener consistencia técnica bajo presión y fatiga',
+        observaciones: r.observaciones || `Evaluación grupal de ${test_name || 'prueba'}`,
+      });
+      results.push(created);
+    }
+
+    return res.status(201).json({
+      message: `Evaluación grupal registrada exitosamente para ${results.length} atletas.`,
+      count: results.length,
+      evaluations: results,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 // ==============================================================================
 // ASISTENCIA DE ENTRENAMIENTOS / JUEGOS + ELEGIBILIDAD (ENTRENADOR)
 // ==============================================================================

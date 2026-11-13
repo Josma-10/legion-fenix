@@ -137,33 +137,125 @@ export default function PlantillaElegibilidadModule({
     }
   };
 
-  const groupedCategories = groupCategoriesByDiscipline(categories);
+  const [activeDiscipline, setActiveDiscipline] = useState('Campo');
+  const groupedCategories = useMemo(() => groupCategoriesByDiscipline(categories), [categories]);
+
+  // Asegurar que siempre haya una categoría seleccionada y no se mezclen todas juntas
+  useEffect(() => {
+    if (!catFilter && categories.length > 0) {
+      const firstInCampo = categories.find((c) => c.disciplina === 'Campo') || categories[0];
+      setCatFilter(String(firstInCampo.id_categoria));
+    }
+  }, [categories, catFilter]);
+
+  const activeCategoryObj = useMemo(
+    () => categories.find((c) => String(c.id_categoria) === String(catFilter)),
+    [categories, catFilter]
+  );
 
   const visibleRoster = useMemo(() => {
-    if (!catFilter) return players;
+    if (!catFilter) {
+      if (categories.length > 0) {
+        return players.filter((p) => String(p.id_categoria) === String(categories[0].id_categoria));
+      }
+      return [];
+    }
     return players.filter((p) => String(p.id_categoria) === String(catFilter));
-  }, [players, catFilter]);
+  }, [players, catFilter, categories]);
 
   return (
     <section className="space-y-6">
-      {/* Submenú Interno: Plantilla y Fichas vs Pasar Asistencia */}
+      {/* Selector Jerárquico de Categoría (Evita desorden de jugadores juntos) */}
+      <div className="card-fenix p-4 sm:p-5 border-l-4 border-l-rojo-fuego space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 pb-2">
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-widest text-rojo-fuego">
+              Selección de Categoría para Convocatoria
+            </span>
+            <h3 className="font-display text-lg font-bold text-white">
+              Plantilla para Convocatoria: {activeCategoryObj?.nombre || 'Selecciona Categoría'} ({visibleRoster.length} Atletas)
+            </h3>
+          </div>
+          <span className="text-xs text-texto-secundario">
+            Mostrando únicamente los atletas de esta categoría
+          </span>
+        </div>
+
+        {/* 3 Botones Principales de Disciplina */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {DISCIPLINES.map((d) => (
+            <button
+              key={d.key}
+              type="button"
+              onClick={() => {
+                setActiveDiscipline(d.key);
+                const firstOfDisc = categories.find((c) => c.disciplina === d.key);
+                if (firstOfDisc) setCatFilter(String(firstOfDisc.id_categoria));
+              }}
+              className={`p-2.5 rounded-xl text-xs font-bold border transition flex items-center justify-between ${
+                activeDiscipline === d.key
+                  ? 'bg-vinotinto border-rojo-fuego text-white shadow'
+                  : 'bg-[#151518] border-neutral-800 text-neutral-400 hover:text-white'
+              }`}
+            >
+              <span>{d.label}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-black/40 text-neutral-300">
+                9 Cat.
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Submenú de las 9 categorías */}
+        {groupedCategories
+          .filter((g) => g.key === activeDiscipline)
+          .map((group) => (
+            <div
+              key={group.key}
+              className="bg-[#141418] border border-neutral-800 rounded-xl p-3 flex flex-wrap items-center gap-1.5"
+            >
+              <span className="text-xs font-bold text-rojo-fuego mr-2 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5" /> Categoría:
+              </span>
+              {group.items.map((cat) => {
+                const isSelected = String(catFilter) === String(cat.id_categoria);
+                return (
+                  <button
+                    key={cat.id_categoria}
+                    type="button"
+                    onClick={() => setCatFilter(String(cat.id_categoria))}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                      isSelected
+                        ? 'bg-rojo-fuego border-white text-white shadow-fenix'
+                        : 'bg-[#1a1a20] border-neutral-800 text-neutral-300 hover:border-vinotinto hover:text-white'
+                    }`}
+                  >
+                    {cat.nombre}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+      </div>
+
+      {/* Submenú Interno: Plantilla para Convocatoria vs Pasar Asistencia */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setSubTab('plantilla')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
               subTab === 'plantilla'
                 ? 'bg-vinotinto text-white shadow-fenix'
                 : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
             }`}
           >
-            <Users className="w-4 h-4" /> Plantilla y Fichas ({visibleRoster.length})
+            <Users className="w-4 h-4" /> Plantilla para Convocatoria ({visibleRoster.length})
           </button>
           <button
             type="button"
             onClick={() => setSubTab('asistencia')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
               subTab === 'asistencia'
                 ? 'bg-vinotinto text-white shadow-fenix'
                 : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
@@ -172,23 +264,6 @@ export default function PlantillaElegibilidadModule({
             <ClipboardCheck className="w-4 h-4" /> Pasar Asistencia (Entrenamientos y Juegos)
           </button>
         </div>
-
-        <select
-          className="input-fenix w-auto text-xs"
-          value={catFilter}
-          onChange={(e) => setCatFilter(e.target.value)}
-        >
-          <option value="">Todas las Categorías</option>
-          {groupedCategories.map((g) => (
-            <optgroup key={g.key} label={g.label}>
-              {g.items.map((cat) => (
-                <option key={cat.id_categoria} value={cat.id_categoria}>
-                  {cat.nombre} ({g.short})
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
       </div>
 
       {feedback && (

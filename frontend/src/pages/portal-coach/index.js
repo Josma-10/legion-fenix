@@ -29,20 +29,20 @@ const SUBMODULES = [
   },
   {
     key: 'trabajos3d',
-    label: 'Trabajos y Cancha',
+    label: 'Trabajo en Cancha',
     desc: 'Hora, espacio y modalidad',
     icon: Box,
   },
   {
     key: 'simulador',
     label: 'Tabla de Juego 2D',
-    desc: 'Jugadores 1-22 y pases',
+    desc: 'Pizarra táctica y ejercicios',
     icon: Crosshair,
   },
   {
     key: 'evaluacion',
-    label: 'Evaluación Jugador',
-    desc: 'Manual Física, Téc., Coo.',
+    label: 'Evaluación de Rendimiento',
+    desc: 'Física, Técnica y Coordinativa',
     icon: Award,
   },
   {
@@ -59,8 +59,8 @@ const SUBMODULES = [
   },
   {
     key: 'plantilla',
-    label: 'Plantilla y Fichas',
-    desc: 'Asistencia, médico, pago',
+    label: 'Plantilla para Convocatoria',
+    desc: 'Categorías y convocatorias',
     icon: Users,
   },
 ];
@@ -218,6 +218,7 @@ export default function PortalCoach() {
               tacticas={dashboard.tacticas}
               trabajos={dashboard.trabajos || []}
               categories={dashboard.categories}
+              players={dashboard.players || []}
               selectedCategoryFilter={selectedCategory}
               initialTrabajoId={selectedTrabajoForBoard}
               onCreated={loadDashboard}

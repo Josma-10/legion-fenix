@@ -19,6 +19,17 @@ import { useBcvRate, formatBs, formatRate } from '../../utils/bcv';
 
 const STORE_FILTERS = ['Todos', 'Uniforme Local', 'Uniforme Visitante', 'Accesorios'];
 
+export function getEffectiveProductPrice(product, size) {
+  let base = Number(product?.precio) || 0;
+  const isPlusSize = ['XXL', '2XL', '3XL', '4XL', 'XL+'].includes(
+    String(size || '').toUpperCase().trim()
+  );
+  if (isPlusSize) {
+    base += 5; // Suplemento talla > XL: +5€ (Uniforme completo 25€ / Camisa 15€)
+  }
+  return base;
+}
+
 export default function TiendaOficialModule({ products = [] }) {
   const { bcv } = useBcvRate();
   const tasa = Number(bcv?.tasa_bcv || 0);
@@ -46,6 +57,7 @@ export default function TiendaOficialModule({ products = [] }) {
   const addToCart = (product) => {
     const defaultSize = (product.tallas_disponibles || 'M').split(',')[0].trim();
     const size = selectedSizes[product.id_producto] || defaultSize;
+    const effectivePrice = getEffectiveProductPrice(product, size);
     setCart((prev) => {
       const idx = prev.findIndex(
         (item) => item.id_producto === product.id_producto && item.talla === size
@@ -53,7 +65,7 @@ export default function TiendaOficialModule({ products = [] }) {
       if (idx >= 0) {
         return prev.map((item, i) => (i === idx ? { ...item, qty: item.qty + 1 } : item));
       }
-      return [...prev, { ...product, talla: size, qty: 1 }];
+      return [...prev, { ...product, talla: size, precio: effectivePrice, qty: 1 }];
     });
     setVerifiedOrder(null);
     setCheckoutError('');
@@ -160,7 +172,7 @@ export default function TiendaOficialModule({ products = [] }) {
           Carrito ({cartCount})
           {cartCount > 0 && (
             <span className="ml-1 bg-rojo-fuego text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-              ${cartTotal.toFixed(2)}
+              {cartTotal.toFixed(2)} €
             </span>
           )}
         </button>
@@ -205,7 +217,10 @@ export default function TiendaOficialModule({ products = [] }) {
         {visibleProducts.map((prod) => {
           const sizes = (prod.tallas_disponibles || 'M').split(',').map((s) => s.trim());
           const currentSize = selectedSizes[prod.id_producto] || sizes[0];
-          const prodPrice = Number(prod.precio);
+          const prodPrice = getEffectiveProductPrice(prod, currentSize);
+          const isPlusSize = ['XXL', '2XL', '3XL', '4XL', 'XL+'].includes(
+            String(currentSize || '').toUpperCase().trim()
+          );
           const isVisitante = String(prod.categoria_producto || '').toLowerCase().includes('visitante');
           const isLocal = String(prod.categoria_producto || '').toLowerCase().includes('local');
 
@@ -258,10 +273,15 @@ export default function TiendaOficialModule({ products = [] }) {
                 <div className="flex items-center justify-between gap-1">
                   <div>
                     <span className="font-display text-2xl font-extrabold text-white block leading-none">
-                      ${prodPrice.toFixed(2)}
+                      {prodPrice.toFixed(2)} €
                     </span>
+                    {isPlusSize && (
+                      <span className="text-[10px] text-amber-300 font-bold block mt-0.5">
+                        Talla &gt; XL (+5€)
+                      </span>
+                    )}
                     {tasa > 0 && (
-                      <span className="text-[10px] text-amber-300 font-semibold">
+                      <span className="text-[10px] text-amber-300 font-semibold block mt-0.5">
                         {formatBs(prodPrice * tasa)}
                       </span>
                     )}
@@ -402,7 +422,7 @@ export default function TiendaOficialModule({ products = [] }) {
                       <span className="text-texto-secundario">Total Pagado:</span>
                       <div className="text-right">
                         <span className="font-display text-lg font-extrabold text-green-400 block">
-                          ${Number(verifiedOrder.monto_total).toFixed(2)} USD
+                          {Number(verifiedOrder.monto_total).toFixed(2)} €
                         </span>
                         {verifiedOrder.monto_bs && (
                           <span className="text-[11px] font-bold text-amber-300">
@@ -451,7 +471,7 @@ export default function TiendaOficialModule({ products = [] }) {
                         <div>
                           <p className="text-sm font-bold text-white">{item.nombre}</p>
                           <p className="text-xs text-texto-secundario">
-                            Talla {item.talla} • ${Number(item.precio).toFixed(2)} c/u
+                            Talla {item.talla} • {Number(item.precio).toFixed(2)} € c/u
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -494,7 +514,7 @@ export default function TiendaOficialModule({ products = [] }) {
                       </div>
                       <div className="text-right">
                         <span className="text-3xl font-display font-extrabold text-white block leading-none">
-                          ${cartTotal.toFixed(2)} USD
+                          {cartTotal.toFixed(2)} €
                         </span>
                         {tasa > 0 && (
                           <span className="text-sm font-extrabold text-amber-300">
