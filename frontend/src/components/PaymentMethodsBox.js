@@ -77,13 +77,12 @@ export default function PaymentMethodsBox({
     `Banco: ${CLUB_BANK_DETAILS.bancoNombre} (${CLUB_BANK_DETAILS.bancoCodigo})`,
     `Documento (${CLUB_BANK_DETAILS.tipoCuenta}): ${CLUB_BANK_DETAILS.documento}`,
     `Teléfono: ${CLUB_BANK_DETAILS.telefonoPagoMovil}`,
-    `Monto USD: $${formattedUsd} USD`,
     ...(tasa > 0
       ? [
-          `Monto Exacto Bs. (BCV): ${formattedBs} (${plainBs})`,
-          `Tasa BCV (${formatBcvDate(activeBcv?.fecha_tasa)}): ${formatRate(tasa)} Bs./USD`,
+          `Monto Oficial en Bolívares: ${formattedBs} (${plainBs})`,
+          `Tasa Oficial BCV (${formatBcvDate(activeBcv?.fecha_tasa)}): ${formatRate(tasa)} Bs.`,
         ]
-      : []),
+      : [`Monto en Bolívares: ${formattedBs}`]),
     `Concepto: ${concept}`,
   ].join('\n');
 
@@ -92,7 +91,7 @@ export default function PaymentMethodsBox({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
           <Landmark className="w-3.5 h-3.5 text-rojo-fuego" />
-          Monto Exacto Calculado Hoy (Tasa Oficial BCV)
+          Monto Oficial en Bolívares (Tasa Oficial BCV del Día)
         </span>
         <button
           type="button"
@@ -110,17 +109,13 @@ export default function PaymentMethodsBox({
         <div>
           <p className="text-[11px] text-texto-secundario">Total a Pagar ({concept})</p>
           <div className="flex flex-wrap items-baseline gap-2.5 mt-0.5">
-            <span className="font-display text-2xl sm:text-3xl font-extrabold text-white">
-              ${formattedUsd} <span className="text-xs font-sans text-texto-secundario">USD</span>
-            </span>
-            <span className="text-neutral-500 font-bold">=</span>
-            <span className="font-display text-2xl sm:text-3xl font-extrabold text-amber-300">
+            <span className="font-display text-3xl sm:text-4xl font-extrabold text-white">
               {bcvLoading && !tasa ? 'Calculando Bs...' : formattedBs}
             </span>
           </div>
         </div>
 
-        {tasa > 0 && usdAmount > 0 && (
+        {tasa > 0 && (
           <CopyButton
             value={plainBs}
             label={`Copiar ${plainBs} Bs.`}
@@ -131,9 +126,9 @@ export default function PaymentMethodsBox({
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800/90 text-[11px] text-texto-secundario">
         <span>
-          Tasa BCV:{' '}
+          Tasa Oficial BCV:{' '}
           <strong className="text-white">
-            {tasa > 0 ? `1 USD = ${formatRate(tasa)} Bs.` : 'Consultando...'}
+            {tasa > 0 ? `${formatRate(tasa)} Bs.` : 'Consultando...'}
           </strong>
         </span>
         <span>

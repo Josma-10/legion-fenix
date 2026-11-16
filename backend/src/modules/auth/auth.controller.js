@@ -382,3 +382,184 @@ exports.me = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.registerMinorAthlete = async (req, res) => {
+  const {
+    rep_nombre,
+    rep_dni,
+    rep_parentesco,
+    rep_telefono,
+    rep_direccion,
+    email,
+    password,
+    atleta_nombre_completo,
+    atleta_dni,
+    atleta_fecha_nacimiento,
+    atleta_genero,
+    estatura,
+    peso,
+    pierna_habil,
+    posicion_juego,
+    disciplina,
+    modalidad,
+    talla_camiseta,
+    talla_short,
+    metodo_pago,
+    referencia_bancaria,
+    telefono_pago,
+  } = req.body;
+
+  if (
+    !rep_nombre ||
+    !rep_dni ||
+    !rep_telefono ||
+    !email ||
+    !password ||
+    !atleta_nombre_completo ||
+    !atleta_fecha_nacimiento ||
+    !(disciplina || modalidad) ||
+    !referencia_bancaria ||
+    !telefono_pago
+  ) {
+    return res.status(400).json({
+      error:
+        'Todos los campos del representante, del atleta menor (nombre, fecha de nacimiento, disciplina) y datos del pago son obligatorios.',
+    });
+  }
+
+  const pwdCheck = validatePasswordPolicy(password);
+  if (!pwdCheck.valid) {
+    return res.status(400).json({ error: pwdCheck.error });
+  }
+
+  const age = computeAgeFromBirthDate(atleta_fecha_nacimiento);
+  if (age === null || age < 0 || age >= 18) {
+    return res.status(400).json({
+      error:
+        age !== null && age >= 18
+          ? `El atleta tiene ${age} años (mayor de edad). Debe registrarse directamente en la pestaña "Mayor de Edad".`
+          : 'Fecha de nacimiento inválida para menor de edad.',
+    });
+  }
+
+  const targetModalidad = normalizeModalidad(disciplina || modalidad);
+  if (!targetModalidad) {
+    return res.status(400).json({
+      error: 'Disciplina inválida. Selecciona Fútbol Campo, Fútbol 7 o Fútbol Sala.',
+    });
+  }
+
+  let targetCategoryName = 'Bebés (Sub-6)';
+  if (age <= 6) targetCategoryName = 'Bebés (Sub-6)';
+  else if (age <= 8) targetCategoryName = 'Sub-8';
+  else if (age <= 10) targetCategoryName = 'Sub-10';
+  else if (age <= 12) targetCategoryName = 'Sub-12';
+  else if (age <= 14) targetCategoryName = 'Sub-14';
+  else if (age <= 16) targetCategoryName = 'Sub-16';
+  else targetCategoryName = 'Sub-18';
+
+  let estaturaNum = Number(estatura);
+  if (estaturaNum > 3) estaturaNum = Number((estaturaNum / 100).toFixed(2));
+  const pesoNum = Number(peso);
+
+  const fotoFile = req.files?.foto_perfil?.[0];
+  const comprobanteFile = req.files?.comprobante_pago?.[0];
+  const fotoUrl = fotoFile ? getUploadedFileUrl(req, fotoFile) : req.body.foto_url || null;
+  const comprobanteUrl = comprobanteFile ? getUploadedFileUrl(req, comprobanteFile) : req.body.comprobante_url || null;
+
+  if (!fotoUrl) {
+    return res.status(400).json({ error: 'Debe adjuntar la fotografía de perfil del atleta menor.' });
+  }
+  if (!comprobanteUrl) {
+    return res.status(400).json({ error: 'Debe adjuntar el capture o comprobante del pago de inscripción.' });
+  }
+
+  try {
+    const existing = await authModel.findByUsernameOrEmail(email.trim());
+    if (existing) {
+      return res.status(409).json({ error: 'Ya existe una cuenta registrada con ese correo electrónico.' });
+    }
+
+    const catRes = await pool.query(
+      `SELECT id_categoria, nombre, disciplina, modalidad
+       FROM categorias
+       WHERE modalidad = $1 AND nombre = $2
+       LIMIT 1`,
+      [targetModalidad, targetCategoryName]
+    );
+    if (catRes.rows.length === 0) {
+      return res.status(404).json({ error: `Categoría ${targetCategoryName} no encontrada para ${targetModalidad}.` });
+    }
+    const category = catRes.rows[0];
+
+    const cleanFullName = atleta_nombre_completo.trim().replace(/\s+/g, ' ');
+    const nameParts = cleanFullName.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || cleanFullName;
+    const generatedDni = atleta_dni && atleta_dni.trim() ? atleta_dni.trim() : `MEN-${Date.now().toString().slice(-8)}`;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const bcvService = require('../../services/bcvService');
+    const bcv = await bcvService.getBcvRate();
+    const converted = bcvService.convertEurToBs(15, bcv);
+
+    const created = await authModel.createMinorWithRepresentativeUser({
+      repNombre: rep_nombre.trim(),
+      repEmail: email.trim().toLowerCase(),
+      passwordHash,
+      repTelefono: rep_telefono.trim(),
+      repDni: rep_dni.trim(),
+      repParentesco: rep_parentesco || 'Padre',
+      repDireccion: rep_direccion || '',
+      atletaNombre: firstName,
+      atletaApellido: lastName,
+      atletaDni: generatedDni,
+      atletaFechaNacimiento,
+      atletaGenero: atleta_genero || 'Masculino',
+      estatura_m: Number.isFinite(estaturaNum) && estaturaNum > 0 ? estaturaNum : 1.40,
+      peso_kg: Number.isFinite(pesoNum) && pesoNum > 0 ? pesoNum : 38,
+      talla_camiseta: talla_camiseta || '10',
+      talla_short: talla_short || '10',
+      foto_url: fotoUrl,
+      posicion_habitual: posicion_juego || 'Delantero Centro',
+      pierna_habil: pierna_habil || 'Derecho',
+      id_categoria: category.id_categoria,
+      categoriaNombre: category.nombre,
+      disciplinaNombre: category.disciplina,
+      metodo_pago: metodo_pago || 'Pago Móvil',
+      referencia_bancaria: String(referencia_bancaria).trim(),
+      telefono_pago: String(telefono_pago).trim(),
+      comprobante_url: comprobanteUrl,
+      tasa_bcv: bcv.tasa_bcv,
+      monto_bs: converted.monto_bs,
+    });
+
+    const token = jwt.sign(
+      {
+        id: created.user.id_usuario,
+        rol: created.user.rol,
+        nombre: created.user.nombre,
+        email: created.user.email,
+        id_representante: created.user.id_representante,
+      },
+      JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+    );
+
+    return res.status(201).json({
+      message: `Registro completado exitosamente. Atleta ${created.player.nombre} asignado a ${category.nombre} (${category.disciplina}).`,
+      token,
+      user: created.user,
+      player: created.player,
+      transaction: created.transaction,
+      tasa_bcv: bcv.tasa_bcv,
+      monto_bs: converted.monto_bs,
+    });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'El correo electrónico o la cédula ya se encuentran registrados.' });
+    }
+    return res.status(500).json({ error: error.message });
+  }
+};
+

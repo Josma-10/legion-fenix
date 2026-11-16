@@ -66,4 +66,115 @@ img, video {
   .input-fenix {
     @apply w-full bg-[#151515] border border-neutral-700 focus:border-rojo-fuego focus:ring-1 focus:ring-rojo-fuego rounded-lg px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition;
   }
+
+  /* ======= PHOENIX DESIGN SYSTEM (ADAPTADO DE BIENES PÚBLICOS) ======= */
+  .hover-shadow {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .hover-shadow:hover {
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25) !important;
+    transform: translateY(-2px);
+  }
+
+  .navbar-vertical-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    text-transform: uppercase;
+    padding: 0.65rem 0.75rem 0.25rem;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .navbar-vertical-line {
+    border-color: #26262b;
+    margin: 0.5rem 0.75rem;
+    opacity: 0.6;
+  }
+
+  .phoenix-card {
+    background: #141419;
+    border: 1px solid #23232a;
+    border-radius: 0.875rem;
+    transition: all 0.2s ease;
+  }
+  .phoenix-card:hover {
+    border-color: #7A001E;
+  }
+
+  .phoenix-kpi {
+    background: #141419;
+    border: 1px solid #23232a;
+    border-radius: 0.875rem;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+  }
+  .phoenix-kpi:hover {
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+    border-color: #E11D2E;
+  }
+
+  .phoenix-icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .badge-phoenix {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+  }
+
+  .table-phoenix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.825rem;
+  }
+  .table-phoenix thead th {
+    background: #101014;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #23232a;
+  }
+  .table-phoenix thead th.sort {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .table-phoenix thead th.sort:hover {
+    background-color: #1a1a22;
+    color: #ffffff;
+  }
+  .table-phoenix tbody tr {
+    border-bottom: 1px solid #1a1a20;
+    transition: background-color 0.15s ease;
+  }
+  .table-phoenix tbody tr:hover {
+    background-color: rgba(122, 0, 30, 0.1);
+  }
+  .table-phoenix tbody td {
+    padding: 0.875rem 1rem;
+    vertical-align: middle;
+  }
 }
+

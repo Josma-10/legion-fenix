@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import PaymentMethodsBox from '../../components/PaymentMethodsBox';
 import api from '../../utils/api';
-import { useBcvRate, formatBs, formatRate } from '../../utils/bcv';
+import { useBcvRate, formatBs, formatRate, DEFAULT_EUR_BCV_RATE, calcPriceBs } from '../../utils/bcv';
 
 const STORE_FILTERS = ['Todos', 'Uniforme Local', 'Uniforme Visitante', 'Accesorios'];
 
@@ -80,8 +80,9 @@ export default function TiendaOficialModule({ products = [] }) {
     );
   };
 
+  const effectiveRate = tasa > 0 ? tasa : DEFAULT_EUR_BCV_RATE;
   const cartTotal = cart.reduce((acc, item) => acc + Number(item.precio) * item.qty, 0);
-  const cartTotalBs = tasa > 0 ? cartTotal * tasa : 0;
+  const cartTotalBs = calcPriceBs(cartTotal, effectiveRate);
   const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
   const handleStoreCheckout = async (e) => {
@@ -159,11 +160,9 @@ export default function TiendaOficialModule({ products = [] }) {
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white mt-0.5">
               TIENDA OFICIAL LEGIÓN FÉNIX FC
             </h2>
-            {tasa > 0 && (
-              <p className="text-[11px] text-amber-300 font-semibold mt-0.5">
-                Cálculo automático a Tasa Oficial BCV hoy: 1 USD = {formatRate(tasa)} Bs.
-              </p>
-            )}
+            <p className="text-[11px] text-amber-300 font-semibold mt-0.5">
+              Precios en Bolívares (Bs.) calculados según tasa oficial BCV del día
+            </p>
           </div>
         </div>
 
@@ -172,7 +171,7 @@ export default function TiendaOficialModule({ products = [] }) {
           Carrito ({cartCount})
           {cartCount > 0 && (
             <span className="ml-1 bg-rojo-fuego text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-              {cartTotal.toFixed(2)} €
+              {formatBs(cartTotalBs)}
             </span>
           )}
         </button>
@@ -273,16 +272,11 @@ export default function TiendaOficialModule({ products = [] }) {
                 <div className="flex items-center justify-between gap-1">
                   <div>
                     <span className="font-display text-2xl font-extrabold text-white block leading-none">
-                      {prodPrice.toFixed(2)} €
+                      {formatBs(calcPriceBs(prodPrice, effectiveRate))}
                     </span>
                     {isPlusSize && (
                       <span className="text-[10px] text-amber-300 font-bold block mt-0.5">
-                        Talla &gt; XL (+5€)
-                      </span>
-                    )}
-                    {tasa > 0 && (
-                      <span className="text-[10px] text-amber-300 font-semibold block mt-0.5">
-                        {formatBs(prodPrice * tasa)}
+                        Talla &gt; XL (Suplemento incluido)
                       </span>
                     )}
                   </div>
@@ -358,7 +352,7 @@ export default function TiendaOficialModule({ products = [] }) {
                 }}
                 className="btn-cta text-xs"
               >
-                <Plus className="w-4 h-4" /> Agregar (${Number(zoomProduct.precio).toFixed(2)})
+                <Plus className="w-4 h-4" /> Agregar ({formatBs(calcPriceBs(Number(zoomProduct.precio), effectiveRate))})
               </button>
             </div>
           </div>
@@ -422,13 +416,8 @@ export default function TiendaOficialModule({ products = [] }) {
                       <span className="text-texto-secundario">Total Pagado:</span>
                       <div className="text-right">
                         <span className="font-display text-lg font-extrabold text-green-400 block">
-                          {Number(verifiedOrder.monto_total).toFixed(2)} €
+                          {formatBs(verifiedOrder.monto_bs || (Number(verifiedOrder.monto_total) * effectiveRate))}
                         </span>
-                        {verifiedOrder.monto_bs && (
-                          <span className="text-[11px] font-bold text-amber-300">
-                            {formatBs(verifiedOrder.monto_bs)} (Tasa BCV {formatRate(verifiedOrder.tasa_bcv)})
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -471,7 +460,7 @@ export default function TiendaOficialModule({ products = [] }) {
                         <div>
                           <p className="text-sm font-bold text-white">{item.nombre}</p>
                           <p className="text-xs text-texto-secundario">
-                            Talla {item.talla} • {Number(item.precio).toFixed(2)} € c/u
+                            Talla {item.talla} • {formatBs(calcPriceBs(Number(item.precio), effectiveRate))} c/u
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -506,21 +495,14 @@ export default function TiendaOficialModule({ products = [] }) {
                     <div className="flex items-center justify-between bg-[#151515] border border-vinotinto/60 rounded-xl px-4 py-3">
                       <div>
                         <span className="text-sm font-bold text-texto-secundario block">Total a Pagar:</span>
-                        {tasa > 0 && (
-                          <span className="text-[11px] text-texto-secundario">
-                            Tasa BCV: {formatRate(tasa)} Bs./USD
-                          </span>
-                        )}
+                        <span className="text-[11px] text-texto-secundario">
+                          Monto oficial en Bolívares (Bs.)
+                        </span>
                       </div>
                       <div className="text-right">
                         <span className="text-3xl font-display font-extrabold text-white block leading-none">
-                          {cartTotal.toFixed(2)} €
+                          {formatBs(cartTotalBs)}
                         </span>
-                        {tasa > 0 && (
-                          <span className="text-sm font-extrabold text-amber-300">
-                            {formatBs(cartTotalBs)}
-                          </span>
-                        )}
                       </div>
                     </div>
 
@@ -647,9 +629,7 @@ export default function TiendaOficialModule({ products = [] }) {
                         <CheckCircle2 className="w-4 h-4" />
                         {checkoutSubmitting
                           ? 'Verificando Referencia, Teléfono y Capture...'
-                          : tasa > 0
-                          ? `Pagar y Verificar ($${cartTotal.toFixed(2)} / ${formatBs(cartTotalBs)})`
-                          : `Pagar y Verificar Compra ($${cartTotal.toFixed(2)})`}
+                          : `Pagar y Verificar (${formatBs(cartTotalBs)})`}
                       </button>
                     </form>
                   </div>

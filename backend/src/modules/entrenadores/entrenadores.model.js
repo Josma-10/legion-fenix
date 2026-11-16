@@ -605,6 +605,91 @@ const upsertConvocatoria = async ({
   return rows[0];
 };
 
+const assignPlayerDorsal = async (idJugador, dorsal, idCategoria = null) => {
+  let catId = idCategoria;
+  if (!catId) {
+    const pRes = await pool.query('SELECT id_categoria FROM jugadores WHERE id_jugador = $1', [idJugador]);
+    if (pRes.rows.length === 0) throw new Error('Jugador no encontrado.');
+    catId = pRes.rows[0].id_categoria;
+  }
+
+  if (dorsal !== null && dorsal !== undefined && String(dorsal).trim() !== '') {
+    const conflictRes = await pool.query(
+      `SELECT id_jugador, nombre, apellido, dorsal 
+       FROM jugadores 
+       WHERE id_categoria = $1 AND dorsal = $2 AND id_jugador != $3 AND activo = TRUE 
+       LIMIT 1`,
+      [catId, Number(dorsal), idJugador]
+    );
+    if (conflictRes.rows.length > 0) {
+      const c = conflictRes.rows[0];
+      throw new Error(`El dorsal #${dorsal} ya está asignado a ${c.nombre} ${c.apellido} en esta categoría. Selecciona un dorsal disponible.`);
+    }
+  }
+
+  const dorsalVal = dorsal !== null && dorsal !== undefined && String(dorsal).trim() !== '' ? Number(dorsal) : null;
+  const { rows } = await pool.query(
+    `UPDATE jugadores SET dorsal = $1 WHERE id_jugador = $2 RETURNING id_jugador, id_categoria, nombre, apellido, dorsal`,
+    [dorsalVal, idJugador]
+  );
+  return rows[0];
+};
+
+const loanPlayerToCategory = async ({ idJugador, targetIdCategoria, newDorsal }) => {
+  const [jRes, targetRes] = await Promise.all([
+    pool.query(
+      `SELECT j.id_jugador, j.nombre, j.apellido, j.dorsal, c.id_categoria, c.nombre AS categoria_nombre, c.edad_min
+       FROM jugadores j
+       JOIN categorias c ON c.id_categoria = j.id_categoria
+       WHERE j.id_jugador = $1`,
+      [idJugador]
+    ),
+    pool.query(`SELECT id_categoria, nombre, edad_min FROM categorias WHERE id_categoria = $1`, [targetIdCategoria]),
+  ]);
+
+  if (jRes.rows.length === 0) throw new Error('Jugador no encontrado.');
+  if (targetRes.rows.length === 0) throw new Error('Categoría destino no encontrada.');
+
+  const player = jRes.rows[0];
+  const target = targetRes.rows[0];
+
+  if (Number(target.edad_min) < Number(player.edad_min)) {
+    throw new Error(
+      `Infracción reglamentaria: El atleta de ${player.categoria_nombre} no puede descender a una categoría inferior (${target.nombre}). Solo se permite préstamo a categorías superiores.`
+    );
+  }
+
+  if (newDorsal !== null && newDorsal !== undefined && String(newDorsal).trim() !== '') {
+    const conflictRes = await pool.query(
+      `SELECT id_jugador, nombre, apellido, dorsal 
+       FROM jugadores 
+       WHERE id_categoria = $1 AND dorsal = $2 AND id_jugador != $3 AND activo = TRUE 
+       LIMIT 1`,
+      [target.id_categoria, Number(newDorsal), idJugador]
+    );
+    if (conflictRes.rows.length > 0) {
+      const c = conflictRes.rows[0];
+      throw new Error(
+        `El dorsal #${newDorsal} ya está ocupado por ${c.nombre} ${c.apellido} en la categoría ${target.nombre}. Elige un número disponible.`
+      );
+    }
+  }
+
+  const finalDorsal = newDorsal !== null && newDorsal !== undefined && String(newDorsal).trim() !== '' ? Number(newDorsal) : null;
+  const { rows } = await pool.query(
+    `UPDATE jugadores 
+     SET id_categoria = $1, dorsal = $2 
+     WHERE id_jugador = $3 
+     RETURNING id_jugador, id_categoria, nombre, apellido, dorsal`,
+    [target.id_categoria, finalDorsal, idJugador]
+  );
+  return {
+    player: rows[0],
+    origen: player.categoria_nombre,
+    destino: target.nombre,
+  };
+};
+
 module.exports = {
   getTacticas,
   countTacticasByCategory,
@@ -629,4 +714,6 @@ module.exports = {
   getUpcomingFixtures,
   getConvocatoriasByMatch,
   upsertConvocatoria,
+  assignPlayerDorsal,
+  loanPlayerToCategory,
 };

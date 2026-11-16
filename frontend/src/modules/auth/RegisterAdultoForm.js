@@ -65,6 +65,11 @@ export default function RegisterAdultoForm({
     e.preventDefault();
     if (onError) onError('');
 
+    if (/\s/.test(adultForm.email) || /\s/.test(adultForm.password)) {
+      if (onError) onError('No se permiten espacios en blanco en el correo ni en la contraseña.');
+      return;
+    }
+
     if (!passwordCheck.isValid) {
       if (onError) {
         onError(
@@ -404,10 +409,10 @@ export default function RegisterAdultoForm({
       <div className="border-t border-neutral-800 pt-4 space-y-3">
         <h4 className="font-display text-lg font-extrabold text-white flex items-center gap-2">
           <CreditCard className="w-4 h-4 text-rojo-fuego" />
-          PAGO DE INSCRIPCIÓN ($35.00 USD — BCV HOY) Y COMPROBANTE
+          PAGO DE MATRÍCULA DE INSCRIPCIÓN Y COMPROBANTE
         </h4>
         <PaymentMethodsBox
-          amount={35}
+          amount={15}
           concept={`Inscripción ${effectiveAdultCategory || 'Adulto'} - ${adultForm.disciplina}`}
           compact
         />

@@ -68,10 +68,34 @@ export function recommendCategoryNameForAge(age, isAdultSelfReg = false) {
   return 'Libre';
 }
 
+export function getCategoryTier(categoryName) {
+  if (!categoryName) return -1;
+  const clean = String(categoryName).trim();
+  const idx = AGE_CATEGORY_ORDER.findIndex((name) => name.toLowerCase() === clean.toLowerCase());
+  return idx;
+}
+
+export function isEligibleForPromotion(originCategoryName, targetCategoryName) {
+  const originTier = getCategoryTier(originCategoryName);
+  const targetTier = getCategoryTier(targetCategoryName);
+  if (originTier === -1 || targetTier === -1) return true;
+  // Solo puede jugar en su misma categoría o subir a una categoría superior
+  return targetTier >= originTier;
+}
+
 export function groupCategoriesByDiscipline(categories = []) {
   return DISCIPLINES.map((disc) => {
     const items = categories
-      .filter((c) => c.modalidad === disc.key)
+      .filter((c) => {
+        const mod = c.modalidad || '';
+        const discStr = c.disciplina || '';
+        return (
+          mod === disc.key ||
+          discStr === disc.label ||
+          discStr === disc.short ||
+          discStr.toLowerCase().includes(disc.key.toLowerCase())
+        );
+      })
       .sort(
         (a, b) =>
           AGE_CATEGORY_ORDER.indexOf(a.nombre) - AGE_CATEGORY_ORDER.indexOf(b.nombre)
@@ -82,3 +106,4 @@ export function groupCategoriesByDiscipline(categories = []) {
     };
   });
 }
+

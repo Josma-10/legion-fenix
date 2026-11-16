@@ -40,4 +40,8 @@ router.post('/attendance', checkRole(['ENTRENADOR']), entrenadoresController.rec
 router.get('/convocatorias', checkRole(['ENTRENADOR']), entrenadoresController.listConvocatorias);
 router.post('/convocatorias', checkRole(['ENTRENADOR']), entrenadoresController.createConvocatoria);
 
+// Asignación de Dorsal Único por Categoría y Préstamo/Refuerzo
+router.patch('/players/:id/dorsal', checkRole(['ENTRENADOR', 'ADMINISTRADOR']), entrenadoresController.assignPlayerDorsal);
+router.post('/players/:id/prestamo', checkRole(['ENTRENADOR', 'ADMINISTRADOR']), entrenadoresController.loanPlayerToCategory);
+
 module.exports = router;

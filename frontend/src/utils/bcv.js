@@ -7,6 +7,8 @@ let inFlightPromise = null;
 
 const CLIENT_TTL_MS = 5 * 60 * 1000;
 
+export const DEFAULT_EUR_BCV_RATE = 1010.5608;
+
 export function formatBs(value) {
   const num = Number(value || 0);
   if (!Number.isFinite(num)) return 'Bs. 0,00';
@@ -14,6 +16,12 @@ export function formatBs(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+export function calcPriceBs(amountEur, rate) {
+  const eur = Number(amountEur || 0);
+  const activeRate = Number(rate) > 0 ? Number(rate) : DEFAULT_EUR_BCV_RATE;
+  return eur * activeRate;
 }
 
 export function formatRate(rate) {

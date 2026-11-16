@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutos
-const DEFAULT_FALLBACK_RATE = 901.6175;
+const DEFAULT_FALLBACK_RATE = 1010.5608;
 
 let memoryCache = null;
 
@@ -19,7 +19,30 @@ function toDateStr(dateInput) {
 }
 
 async function fetchExternalOfficialBcv() {
-  // 1. Fuente principal oficial Venezuela (DolarApi BCV oficial)
+  // 1. Fuente principal oficial Venezuela: Euro Oficial BCV
+  try {
+    const res = await fetch('https://ve.dolarapi.com/v1/euros/oficial', {
+      signal: AbortSignal.timeout(3500),
+      headers: { Accept: 'application/json' },
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const rate = Number(json?.promedio);
+      if (Number.isFinite(rate) && rate > 1) {
+        return {
+          moneda: 'EUR',
+          tasa_bcv: Number(rate.toFixed(4)),
+          fuente: 'Banco Central de Venezuela (Euro Oficial)',
+          fecha_tasa: toDateStr(json.fechaActualizacion),
+          is_live: true,
+        };
+      }
+    }
+  } catch {
+    // Continuar con respaldo Dólar oficial si falla
+  }
+
+  // 2. Fuente respaldo oficial Venezuela: Dólar Oficial BCV
   try {
     const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial', {
       signal: AbortSignal.timeout(3500),
@@ -39,12 +62,12 @@ async function fetchExternalOfficialBcv() {
       }
     }
   } catch {
-    // Continuar con respaldo oficial
+    // Continuar con respaldo internacional
   }
 
-  // 2. Fuente respaldo internacional (ExchangeRate API VES)
+  // 3. Fuente respaldo internacional (ExchangeRate API EUR)
   try {
-    const res2 = await fetch('https://open.er-api.com/v6/latest/USD', {
+    const res2 = await fetch('https://open.er-api.com/v6/latest/EUR', {
       signal: AbortSignal.timeout(3500),
       headers: { Accept: 'application/json' },
     });
@@ -53,9 +76,9 @@ async function fetchExternalOfficialBcv() {
       const rate2 = Number(json2?.rates?.VES);
       if (Number.isFinite(rate2) && rate2 > 1) {
         return {
-          moneda: 'USD',
+          moneda: 'EUR',
           tasa_bcv: Number(rate2.toFixed(4)),
-          fuente: 'BCV Referencial (ExchangeRate API)',
+          fuente: 'BCV Referencial Euro (ExchangeRate API)',
           fecha_tasa: new Date().toISOString().slice(0, 10),
           is_live: true,
         };
@@ -139,7 +162,7 @@ async function getBcvRate({ forceRefresh = false } = {}) {
   if (live) {
     const saved = await persistRateToDb(live);
     const result = {
-      moneda: 'USD',
+      moneda: saved.moneda || live.moneda || 'EUR',
       tasa_bcv: Number(saved.tasa_bcv || live.tasa_bcv),
       fuente: saved.fuente || live.fuente,
       fecha_tasa: toDateStr(saved.fecha_tasa || live.fecha_tasa),
@@ -159,17 +182,22 @@ async function getBcvRate({ forceRefresh = false } = {}) {
   };
 }
 
-function convertUsdToBs(montoUsd, bcvData) {
-  const usd = Number(montoUsd || 0);
+function convertEurToBs(montoEur, bcvData) {
+  const eur = Number(montoEur || 0);
   const tasa = Number(bcvData?.tasa_bcv || DEFAULT_FALLBACK_RATE);
   return {
-    monto_usd: Number(usd.toFixed(2)),
+    monto_eur: Number(eur.toFixed(2)),
     tasa_bcv: Number(tasa.toFixed(4)),
-    monto_bs: Number((usd * tasa).toFixed(2)),
+    monto_bs: Number((eur * tasa).toFixed(2)),
   };
+}
+
+function convertUsdToBs(montoUsd, bcvData) {
+  return convertEurToBs(montoUsd, bcvData);
 }
 
 module.exports = {
   getBcvRate,
+  convertEurToBs,
   convertUsdToBs,
 };

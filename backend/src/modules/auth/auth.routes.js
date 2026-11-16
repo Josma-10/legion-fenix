@@ -14,6 +14,14 @@ router.post(
   ]),
   authController.registerAthlete
 );
+router.post(
+  '/register-minor',
+  uploadCloud.fields([
+    { name: 'foto_perfil', maxCount: 1 },
+    { name: 'comprobante_pago', maxCount: 1 },
+  ]),
+  authController.registerMinorAthlete
+);
 router.get('/me', verifyToken, authController.me);
 
 module.exports = router;

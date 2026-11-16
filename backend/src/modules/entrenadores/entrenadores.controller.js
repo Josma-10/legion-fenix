@@ -669,3 +669,44 @@ exports.createConvocatoria = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.assignPlayerDorsal = async (req, res) => {
+  const idJugador = Number(req.params.id);
+  const { dorsal, id_categoria } = req.body;
+  if (!idJugador) {
+    return res.status(400).json({ error: 'ID de jugador requerido.' });
+  }
+
+  try {
+    const updated = await entrenadoresModel.assignPlayerDorsal(idJugador, dorsal, id_categoria);
+    return res.json({
+      message: `Dorsal #${dorsal || 'S/N'} asignado exitosamente al atleta.`,
+      player: updated,
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+exports.loanPlayerToCategory = async (req, res) => {
+  const idJugador = Number(req.params.id);
+  const { target_id_categoria, new_dorsal } = req.body;
+  if (!idJugador || !target_id_categoria) {
+    return res.status(400).json({ error: 'Jugador y categoría destino son obligatorios.' });
+  }
+
+  try {
+    const result = await entrenadoresModel.loanPlayerToCategory({
+      idJugador,
+      targetIdCategoria: Number(target_id_categoria),
+      newDorsal: new_dorsal,
+    });
+    return res.json({
+      message: `Atleta promovido/prestado como refuerzo desde ${result.origen} hacia ${result.destino}.`,
+      data: result,
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+

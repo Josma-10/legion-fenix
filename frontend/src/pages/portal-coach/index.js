@@ -248,10 +248,11 @@ export default function PortalCoach() {
 
         {activeTab === 'plantilla' && (
           <PlantillaElegibilidadModule
-            players={filteredPlayers}
+            players={dashboard.players || []}
             categories={dashboard.categories}
             upcomingMatches={dashboard.upcomingMatches || []}
             selectedCategoryFilter={selectedCategory}
+            onReload={loadDashboard}
           />
         )}
       </main>
