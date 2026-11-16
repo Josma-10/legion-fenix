@@ -20,7 +20,21 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  const isAdultCard = mode === 'register' && regType === 'adulto';
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.tab === 'register') {
+      setMode('register');
+    } else if (router.query.tab === 'login') {
+      setMode('login');
+    }
+    if (router.query.tipo === 'adulto') {
+      setRegType('adulto');
+    } else if (router.query.tipo === 'representante' || router.query.tipo === 'menor') {
+      setRegType('representante');
+    }
+  }, [router.isReady, router.query]);
+
+  const isRegister = mode === 'register';
 
   return (
     <div className="min-h-screen bg-negro-fondo text-white flex flex-col">
@@ -28,8 +42,8 @@ export default function LoginPage() {
 
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div
-          className={`w-full card-fenix p-6 sm:p-8 border-vinotinto/70 shadow-fenix transition-all ${
-            isAdultCard ? 'max-w-2xl' : 'max-w-md'
+          className={`w-full card-fenix p-5 sm:p-8 border-vinotinto/70 shadow-fenix transition-all duration-300 ${
+            isRegister ? 'max-w-3xl' : 'max-w-md'
           }`}
         >
           <div className="text-center mb-6">

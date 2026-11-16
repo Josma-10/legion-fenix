@@ -44,24 +44,24 @@ export default function Navbar({ subtitle = null }) {
     <header className="sticky top-0 z-40 bg-[#121212]/95 backdrop-blur border-b border-vinotinto/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         {/* Marca Institucional */}
-        <Link href="/" className="flex items-center gap-3 group">
+        <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0 min-w-0">
           <img
             src="/assets/logo-legion-fenix.png"
             alt="Escudo Oficial Legión Fénix FC"
-            className="w-11 h-11 object-contain drop-shadow-[0_2px_10px_rgba(225,29,46,0.55)] group-hover:scale-105 transition"
+            className="w-10 h-10 sm:w-11 sm:h-11 object-contain drop-shadow-[0_2px_10px_rgba(225,29,46,0.55)] group-hover:scale-105 transition shrink-0"
           />
-          <div>
-            <div className="font-display text-xl sm:text-2xl font-extrabold tracking-wider text-white leading-none group-hover:text-rojo-fuego transition">
-              LEGIÓN <span className="text-rojo-fuego">FÉNIX</span> <span className="text-plata-fenix text-base sm:text-lg">FC</span>
+          <div className="min-w-0">
+            <div className="font-display text-lg sm:text-2xl font-extrabold tracking-wider text-white leading-none group-hover:text-rojo-fuego transition truncate">
+              LEGIÓN <span className="text-rojo-fuego">FÉNIX</span> <span className="text-plata-fenix text-sm sm:text-lg">FC</span>
             </div>
-            <p className="text-[11px] text-texto-secundario tracking-wide">
+            <p className="text-[10px] sm:text-[11px] text-texto-secundario tracking-wide truncate max-w-[140px] sm:max-w-[210px] xl:max-w-none">
               {subtitle || 'EST. 2020 • Rendirse Jamás'}
             </p>
           </div>
         </Link>
 
         {/* Navegación Desktop */}
-        <nav className="hidden lg:flex items-center gap-1.5 text-xs xl:text-sm">
+        <nav className="hidden xl:flex items-center gap-1.5 text-xs xl:text-sm">
           <Link
             href="/"
             className={`px-3 py-2 rounded-lg transition ${
@@ -149,45 +149,48 @@ export default function Navbar({ subtitle = null }) {
           )}
         </nav>
 
-        {/* Estado de Sesión */}
-        <div className="hidden lg:flex items-center gap-3">
+        {/* Zona derecha: Estado de Sesión / Login + Menú Móvil */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {user ? (
             <>
-              <div className="text-right">
-                <p className="text-xs font-bold text-white leading-tight">{user.nombre}</p>
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-bold text-white leading-tight truncate max-w-[120px]">{user.nombre}</p>
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-rojo-fuego">
                   <Shield className="w-3 h-3" /> {user.rol}
                 </span>
               </div>
               <button
                 onClick={handleLogout}
-                className="bg-neutral-800 hover:bg-rojo-fuego text-white text-xs font-semibold px-3 py-2 rounded-lg transition inline-flex items-center gap-1.5"
+                className="bg-neutral-800 hover:bg-rojo-fuego text-white text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg transition inline-flex items-center gap-1.5"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                Salir
+                <span className="hidden sm:inline">Salir</span>
               </button>
             </>
           ) : (
-            <Link href="/login" className="btn-cta text-sm py-2 px-4">
-              <LogIn className="w-4 h-4" />
-              Ingresar al Portal
+            <Link
+              href="/login"
+              className="btn-cta text-xs sm:text-sm py-1.5 sm:py-2 px-3 sm:px-4 whitespace-nowrap inline-flex items-center gap-1.5 shadow-fuego"
+            >
+              <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Ingresar al Portal</span>
             </Link>
           )}
-        </div>
 
-        {/* Botón menú móvil */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="lg:hidden p-2 rounded-lg bg-gris-tarjeta border border-neutral-800 text-white"
-          aria-label="Abrir menú"
-        >
-          {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+          {/* Botón menú móvil y tablet */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="xl:hidden p-2 rounded-lg bg-gris-tarjeta border border-neutral-800 hover:border-rojo-fuego text-white transition shrink-0"
+            aria-label="Abrir menú"
+          >
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Menú móvil desplegable */}
       {menuOpen && (
-        <div className="lg:hidden bg-gris-tarjeta border-t border-neutral-800 px-4 py-4 space-y-2">
+        <div className="xl:hidden bg-gris-tarjeta border-t border-neutral-800 px-4 py-4 space-y-2">
           <Link
             href="/"
             onClick={() => setMenuOpen(false)}
@@ -207,7 +210,7 @@ export default function Navbar({ subtitle = null }) {
             onClick={() => setMenuOpen(false)}
             className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-vinotinto/40 text-amber-300"
           >
-            Tarifas Oficiales (€)
+            Tarifas Oficiales (Bs.)
           </Link>
           {canSeeParents && (
             <Link

@@ -24,7 +24,7 @@ export default function DisciplinasGrid({ categories = [], onSelectDisciplineFix
           <Link href="/categorias" className="btn-vinotinto text-xs">
             Explorar Plantillas <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link href="/login" className="btn-cta text-xs">
+          <Link href="/login?tab=register&tipo=representante" className="btn-cta text-xs">
             Nuevo Registro <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -78,7 +78,7 @@ export default function DisciplinasGrid({ categories = [], onSelectDisciplineFix
                 Ver Fixture
               </a>
               <Link
-                href="/login"
+                href="/login?tab=register&tipo=representante"
                 className="text-xs font-bold text-rojo-fuego hover:text-white inline-flex items-center gap-1 transition"
               >
                 Inscribir en {disc.short} <ArrowRight className="w-3.5 h-3.5" />

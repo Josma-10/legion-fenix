@@ -160,6 +160,15 @@ export default function CategoriasExplorerModule({ user = null, initialCategoryI
     );
   }
 
+  const isAdultCategory =
+    (selectedDetail?.category?.edad_min >= 18) ||
+    ['Sub-20', 'Libre'].some((k) =>
+      String(selectedDetail?.category?.nombre || '').includes(k)
+    );
+  const registerHref = `/login?tab=register&tipo=${
+    isAdultCategory ? 'adulto' : 'representante'
+  }`;
+
   return (
     <div className="space-y-6">
       {/* 1. CABECERA Y SELECTOR PRINCIPAL DE LAS 3 DISCIPLINAS */}
@@ -414,72 +423,82 @@ export default function CategoriasExplorerModule({ user = null, initialCategoryI
                   <span className="navbar-vertical-label text-neutral-400 p-0 mb-2">
                     <Compass className="w-3 h-3 text-rojo-fuego" /> Accesos Directos de la Categoría
                   </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    <Link
-                      href="/login"
-                      className="p-2.5 rounded-xl bg-[#181820] hover:bg-vinotinto/40 border border-neutral-800 hover:border-rojo-fuego text-center transition group hover-shadow"
-                    >
-                      <Plus className="w-4 h-4 text-rojo-fuego mx-auto mb-1 group-hover:scale-110 transition" />
-                      <span className="text-[11px] font-bold text-white block">Inscribir Atleta</span>
-                      <span className="text-[9px] text-texto-secundario block">Nueva Ficha</span>
-                    </Link>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          <Link
+                            href={registerHref}
+                            className="p-2.5 rounded-xl bg-[#181820] hover:bg-vinotinto/40 border border-neutral-800 hover:border-rojo-fuego text-center transition group hover-shadow"
+                          >
+                            <Plus className="w-4 h-4 text-rojo-fuego mx-auto mb-1 group-hover:scale-110 transition" />
+                            <span className="text-[11px] font-bold text-white block">Inscribir Atleta</span>
+                            <span className="text-[9px] text-amber-300 block">
+                              {isAdultCategory ? 'Ficha Mayor' : 'Ficha Menor'}
+                            </span>
+                          </Link>
 
-                    <Link
-                      href="/portal-coach"
-                      className="p-2.5 rounded-xl bg-[#181820] hover:bg-vinotinto/40 border border-neutral-800 hover:border-rojo-fuego text-center transition group hover-shadow"
-                    >
-                      <ClipboardList className="w-4 h-4 text-amber-400 mx-auto mb-1 group-hover:scale-110 transition" />
-                      <span className="text-[11px] font-bold text-white block">Pizarra 2D</span>
-                      <span className="text-[9px] text-texto-secundario block">Táctica y Tareas</span>
-                    </Link>
+                          <Link
+                            href="/portal-coach"
+                            className="p-2.5 rounded-xl bg-[#181820] hover:bg-vinotinto/40 border border-neutral-800 hover:border-rojo-fuego text-center transition group hover-shadow"
+                          >
+                            <ClipboardList className="w-4 h-4 text-amber-400 mx-auto mb-1 group-hover:scale-110 transition" />
+                            <span className="text-[11px] font-bold text-white block">Pizarra 2D</span>
+                            <span className="text-[9px] text-texto-secundario block">Táctica y Tareas</span>
+                          </Link>
 
-                    <Link
-                      href="/portal-padres"
-                      className="p-2.5 rounded-xl bg-[#181820] hover:bg-vinotinto/40 border border-neutral-800 hover:border-rojo-fuego text-center transition group hover-shadow"
-                    >
-                      <Users className="w-4 h-4 text-cyan-400 mx-auto mb-1 group-hover:scale-110 transition" />
-                      <span className="text-[11px] font-bold text-white block">Portal Padres</span>
-                      <span className="text-[9px] text-texto-secundario block">Representantes</span>
-                    </Link>
+                          <Link
+                            href="/portal-padres"
+                            className="p-2.5 rounded-xl bg-[#181820] hover:bg-vinotinto/40 border border-neutral-800 hover:border-rojo-fuego text-center transition group hover-shadow"
+                          >
+                            <Users className="w-4 h-4 text-cyan-400 mx-auto mb-1 group-hover:scale-110 transition" />
+                            <span className="text-[11px] font-bold text-white block">Portal Padres</span>
+                            <span className="text-[9px] text-texto-secundario block">Representantes</span>
+                          </Link>
 
-                    <Link
-                      href="/portal-fisio"
-                      className="p-2.5 rounded-xl bg-[#181820] hover:bg-vinotinto/40 border border-neutral-800 hover:border-rojo-fuego text-center transition group hover-shadow"
-                    >
-                      <Sparkles className="w-4 h-4 text-emerald-400 mx-auto mb-1 group-hover:scale-110 transition" />
-                      <span className="text-[11px] font-bold text-white block">Fisio &amp; Salud</span>
-                      <span className="text-[9px] text-texto-secundario block">Podología / Rehab</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
+                          <Link
+                            href="/portal-fisio"
+                            className="p-2.5 rounded-xl bg-[#181820] hover:bg-vinotinto/40 border border-neutral-800 hover:border-rojo-fuego text-center transition group hover-shadow"
+                          >
+                            <Sparkles className="w-4 h-4 text-emerald-400 mx-auto mb-1 group-hover:scale-110 transition" />
+                            <span className="text-[11px] font-bold text-white block">Fisio &amp; Salud</span>
+                            <span className="text-[9px] text-texto-secundario block">Podología / Rehab</span>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
 
-              {/* PLANTILLA OFICIAL DE ATLETAS */}
-              <div className="card-fenix p-5 sm:p-6 space-y-4">
-                <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-                  <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
-                    <Users className="w-5 h-5 text-rojo-fuego" />
-                    Plantilla Oficial de {selectedDetail.category.nombre} ({selectedDetail.players?.length || 0})
-                  </h3>
-                  <Link
-                    href="/login"
-                    className="text-xs font-bold text-rojo-fuego hover:text-white inline-flex items-center gap-1 transition"
-                  >
-                    Inscribir Atleta <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
+                    {/* PLANTILLA OFICIAL DE ATLETAS */}
+                    <div className="card-fenix p-5 sm:p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                          <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
+                            <Users className="w-5 h-5 text-rojo-fuego" />
+                            Plantilla Oficial de {selectedDetail.category.nombre} ({selectedDetail.players?.length || 0})
+                          </h3>
+                          <Link
+                            href={registerHref}
+                            className="btn-cta text-xs py-1.5 px-3 inline-flex items-center gap-1 transition"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> Inscribir Atleta
+                          </Link>
+                        </div>
 
-                {(!selectedDetail.players || selectedDetail.players.length === 0) ? (
-                  <div className="bg-[#121215] border border-dashed border-neutral-800 rounded-xl p-8 text-center space-y-2">
-                    <Users className="w-8 h-8 text-neutral-600 mx-auto" />
-                    <p className="text-sm font-semibold text-neutral-300">
-                      No hay atletas inscritos aún en esta categoría.
-                    </p>
-                    <p className="text-xs text-texto-secundario">
-                      Los atletas registrados en {selectedDetail.category.nombre} aparecerán automáticamente aquí con su dorsal y posición.
-                    </p>
-                  </div>
-                ) : (
+                        {(!selectedDetail.players || selectedDetail.players.length === 0) ? (
+                          <div className="bg-[#121215] border border-dashed border-neutral-800 rounded-xl p-8 text-center space-y-3">
+                            <Users className="w-8 h-8 text-neutral-600 mx-auto" />
+                            <p className="text-sm font-semibold text-neutral-300">
+                              No hay atletas inscritos aún en esta categoría.
+                            </p>
+                            <p className="text-xs text-texto-secundario max-w-md mx-auto">
+                              Los atletas registrados en {selectedDetail.category.nombre} aparecerán automáticamente aquí con su dorsal y posición.
+                            </p>
+                            <div>
+                              <Link
+                                href={registerHref}
+                                className="btn-cta text-xs py-2 px-4 inline-flex items-center gap-1.5"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Inscribir Atleta en {selectedDetail.category.nombre}
+                              </Link>
+                            </div>
+                          </div>
+                        ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {selectedDetail.players.map((p) => {
                       const openPlayerCard = () =>

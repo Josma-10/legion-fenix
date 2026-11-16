@@ -10,7 +10,7 @@ const HERO_SLIDES = [
     subtitle:
       'Formación integral de alto rendimiento en Fútbol Campo, Fútbol 7 y Fútbol Sala. Disciplina táctica, medicina deportiva e inteligencia de juego.',
     ctaLabel: 'Inscribir Atleta',
-    ctaHref: '/login',
+    ctaHref: '/login?tab=register&tipo=representante',
     accent: 'from-vinotinto/95 via-[#240009]/90 to-negro-fondo',
   },
   {
@@ -46,14 +46,14 @@ export default function HeroSliderModule({ nextMatch = null, loading = false }) 
   const currentSlide = HERO_SLIDES[slideIdx];
 
   return (
-    <section className="relative overflow-hidden border-b border-rojo-fuego/40">
-      <div className={`bg-gradient-to-br ${currentSlide.accent} transition-all duration-500 relative`}>
+    <section className="relative overflow-hidden border-b border-rojo-fuego/40 w-full max-w-full">
+      <div className={`bg-gradient-to-br ${currentSlide.accent} transition-all duration-500 relative overflow-hidden w-full`}>
         {/* Resplandor sutil del Escudo Oficial en fondo */}
         <img
           src="/assets/logo-legion-fenix.png"
           alt=""
           aria-hidden="true"
-          className="hidden lg:block pointer-events-none select-none absolute -right-10 -bottom-10 w-[340px] h-[340px] object-contain opacity-[0.07]"
+          className="hidden lg:block pointer-events-none select-none absolute right-0 bottom-0 w-[300px] h-[300px] object-contain opacity-[0.07]"
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
