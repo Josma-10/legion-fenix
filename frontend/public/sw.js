@@ -1,9 +1,12 @@
-const CACHE_NAME = 'legion-fenix-app-v1';
-const SHELL_ASSETS = ['/', '/manifest.json', '/assets/logo-legion-fenix.png'];
+const CACHE_NAME = 'legion-fenix-app-v2';
 
 self.addEventListener('install', (event) => {
+  // Activación inmediata y ultra-ligera (sin bloquear en archivos pesados)
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS)).catch(() => {})
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.add('/icons/icon-192.png'))
+      .catch(() => {})
   );
   self.skipWaiting();
 });
@@ -17,22 +20,26 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Network-first strategy: siempre prioriza datos en vivo y usa caché solo si no hay red
+// Solo maneja navegación principal en modo network-first con respaldo offline ligero
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  if (url.pathname.startsWith('/api') || url.origin !== self.location.origin) return;
 
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone)).catch(() => {});
-        }
-        return response;
-      })
-      .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
-  );
+  // Nunca interceptar API, manifest, iconos ni el propio Service Worker
+  if (
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith('/api') ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/sw.js' ||
+    url.pathname.startsWith('/icons/')
+  ) {
+    return;
+  }
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request).then((res) => res || caches.match('/')))
+    );
+  }
 });
