@@ -18,6 +18,7 @@ export default function HomePublico() {
     products: [],
     sponsors: [],
     gallery: [],
+    heroSlides: [],
     categories: [],
   });
   const [loading, setLoading] = useState(true);
@@ -42,7 +43,11 @@ export default function HomePublico() {
     <div className="min-h-screen bg-negro-fondo text-white flex flex-col">
       <Navbar subtitle="Portal Oficial de la Hinchada" />
 
-      <HeroSliderModule nextMatch={data.nextMatch} loading={loading} />
+      <HeroSliderModule
+        nextMatch={data.nextMatch}
+        slides={data.heroSlides || []}
+        loading={loading}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12 space-y-16 flex-1 w-full">
         <DisciplinasGrid

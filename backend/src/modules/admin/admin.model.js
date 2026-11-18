@@ -263,6 +263,9 @@ const getUsersWithRoles = async () => {
       u.nombre,
       u.email,
       u.telefono,
+      u.talla_camiseta,
+      u.talla_short,
+      u.talla_zapatos,
       u.creado_en,
       r.id_rol,
       r.nombre AS rol,
@@ -283,6 +286,9 @@ const createUserWithRole = async ({
   telefono,
   rol,
   documento_identidad,
+  talla_camiseta,
+  talla_short,
+  talla_zapatos,
 }) => {
   const client = await pool.connect();
   try {
@@ -297,10 +303,19 @@ const createUserWithRole = async ({
     const idRol = roleRes.rows[0].id_rol;
 
     const userRes = await client.query(
-      `INSERT INTO usuarios (id_rol, nombre, email, password_hash, telefono)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id_usuario, nombre, email, telefono, creado_en`,
-      [idRol, nombre.trim(), email.trim().toLowerCase(), passwordHash, telefono || null]
+      `INSERT INTO usuarios (id_rol, nombre, email, password_hash, telefono, talla_camiseta, talla_short, talla_zapatos)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id_usuario, nombre, email, telefono, talla_camiseta, talla_short, talla_zapatos, creado_en`,
+      [
+        idRol,
+        nombre.trim(),
+        email.trim().toLowerCase(),
+        passwordHash,
+        telefono || null,
+        talla_camiseta ? String(talla_camiseta).trim() : null,
+        talla_short ? String(talla_short).trim() : null,
+        talla_zapatos ? String(talla_zapatos).trim() : null,
+      ]
     );
     const createdUser = userRes.rows[0];
 
@@ -338,11 +353,29 @@ const updateUserRole = async (idUsuario, rol) => {
     `UPDATE usuarios
      SET id_rol = $1
      WHERE id_usuario = $2
-     RETURNING id_usuario, nombre, email, telefono`,
+     RETURNING id_usuario, nombre, email, telefono, talla_camiseta, talla_short, talla_zapatos`,
     [roleRes.rows[0].id_rol, idUsuario]
   );
   if (rows.length === 0) return null;
   return { ...rows[0], rol: roleRes.rows[0].nombre };
+};
+
+const updateUserSizes = async (idUsuario, { talla_camiseta, talla_short, talla_zapatos }) => {
+  const { rows } = await pool.query(
+    `UPDATE usuarios
+     SET talla_camiseta = NULLIF($1, ''),
+         talla_short = NULLIF($2, ''),
+         talla_zapatos = NULLIF($3, '')
+     WHERE id_usuario = $4
+     RETURNING id_usuario, nombre, email, telefono, talla_camiseta, talla_short, talla_zapatos`,
+    [
+      talla_camiseta ? String(talla_camiseta).trim() : '',
+      talla_short ? String(talla_short).trim() : '',
+      talla_zapatos ? String(talla_zapatos).trim() : '',
+      Number(idUsuario),
+    ]
+  );
+  return rows[0] || null;
 };
 
 module.exports = {
@@ -358,4 +391,5 @@ module.exports = {
   getUsersWithRoles,
   createUserWithRole,
   updateUserRole,
+  updateUserSizes,
 };

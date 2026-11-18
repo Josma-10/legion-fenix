@@ -11,6 +11,7 @@ if (fs.existsSync(homeEnvPath)) {
 
 const app = require('./src/app');
 const pool = require('./src/config/db');
+const { ensureSchema } = require('./src/config/ensureSchema');
 const { hasCloudinaryCredentials } = require('./src/config/cloudinary');
 const notificationService = require('./src/services/notificationService');
 const whatsappQrService = require('./src/services/whatsappQrService');
@@ -21,6 +22,8 @@ async function startServer() {
   try {
     await pool.query('SELECT 1');
     console.log('✅ Conexión a PostgreSQL verificada.');
+    await ensureSchema();
+    console.log('🛠️  Esquema actualizado (tallas, asistencias entrenamiento y carrusel principal).');
     whatsappQrService
       .autoResumeIfSessionExists()
       .then((resumed) => {

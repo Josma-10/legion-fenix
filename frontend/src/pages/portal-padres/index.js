@@ -6,6 +6,8 @@ import {
   UserPlus,
   Lock,
   CheckCircle2,
+  XCircle,
+  Calendar,
   AlertTriangle,
   Award,
   Clock,
@@ -34,6 +36,8 @@ export default function PortalPadres() {
   const [dossier, setDossier] = useState(null);
   const [loading, setLoading] = useState(true);
   const [feedbackMsg, setFeedbackMsg] = useState('');
+  const [busyTrainingId, setBusyTrainingId] = useState(null);
+  const [busyQuickMatch, setBusyQuickMatch] = useState(false);
 
   const loadPlayersAndCategories = useCallback(async () => {
     try {
@@ -247,40 +251,222 @@ export default function PortalPadres() {
               evaluation={evalHistory[0] || activePlayer}
             />
 
+            {/* Confirmación rápida de Próximo Juego */}
+            {nextFixture && (
+              <section className="card-fenix p-5 border-l-4 border-l-rojo-fuego space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 pb-2.5">
+                  <div>
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-rojo-fuego flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" /> Próximo Juego Oficial • {nextFixture.torneo}
+                    </span>
+                    <h3 className="font-display text-xl sm:text-2xl font-extrabold text-white mt-0.5">
+                      Legión Fénix vs {nextFixture.rival}
+                    </h3>
+                    <p className="text-xs text-neutral-300 mt-0.5">
+                      {new Date(nextFixture.fecha_hora).toLocaleString('es-VE', {
+                        dateStyle: 'full',
+                        timeStyle: 'short',
+                      })}{' '}
+                      • {nextFixture.sede}
+                    </p>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                      nextFixture.estado_convocatoria === 'Confirmado'
+                        ? 'bg-green-950/70 border-green-500 text-green-300'
+                        : nextFixture.estado_convocatoria === 'Descartado'
+                        ? 'bg-red-950/70 border-rojo-fuego text-red-200'
+                        : 'bg-neutral-900 border-amber-500/60 text-amber-300'
+                    }`}
+                  >
+                    {nextFixture.estado_convocatoria === 'Confirmado'
+                      ? 'Asistencia Confirmada ✓'
+                      : nextFixture.estado_convocatoria === 'Descartado'
+                      ? 'No Puedo Asistir'
+                      : 'Pendiente por Confirmar'}
+                  </span>
+                </div>
+
+                {bloqueoConvocatoria ? (
+                  <p className="text-xs text-red-300">
+                    Debes regularizar tus pagos en el módulo financiero para confirmar asistencia a este juego.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2.5">
+                    <button
+                      type="button"
+                      disabled={busyQuickMatch}
+                      onClick={async () => {
+                        setBusyQuickMatch(true);
+                        try {
+                          await api.patch(
+                            `/players/${activePlayer.id_jugador}/convocatorias/${nextFixture.id_partido}`,
+                            { estado_convocatoria: 'Confirmado', estado: 'Confirmado' }
+                          );
+                          setFeedbackMsg('Asistencia al juego confirmada exitosamente.');
+                          await loadPlayerDossier(selectedPlayerId);
+                        } catch (err) {
+                          alert(err.response?.data?.error || 'No se pudo confirmar asistencia.');
+                        } finally {
+                          setBusyQuickMatch(false);
+                        }
+                      }}
+                      className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-xs font-bold inline-flex items-center justify-center gap-1.5 border transition ${
+                        nextFixture.estado_convocatoria === 'Confirmado'
+                          ? 'bg-green-700 border-green-400 text-white shadow'
+                          : 'bg-green-950/60 hover:bg-green-700 border-green-700 text-green-200 hover:text-white'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {busyQuickMatch
+                        ? 'Guardando...'
+                        : nextFixture.estado_convocatoria === 'Confirmado'
+                        ? 'Asistencia Confirmada ✓'
+                        : 'Confirmar Asistencia al Juego'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busyQuickMatch}
+                      onClick={async () => {
+                        setBusyQuickMatch(true);
+                        try {
+                          await api.patch(
+                            `/players/${activePlayer.id_jugador}/convocatorias/${nextFixture.id_partido}`,
+                            { estado_convocatoria: 'Descartado', estado: 'Descartado' }
+                          );
+                          setFeedbackMsg('Se notificó al cuerpo técnico que no podrás asistir al juego.');
+                          await loadPlayerDossier(selectedPlayerId);
+                        } catch (err) {
+                          alert(err.response?.data?.error || 'No se pudo registrar tu respuesta.');
+                        } finally {
+                          setBusyQuickMatch(false);
+                        }
+                      }}
+                      className={`flex-1 sm:flex-none px-4 py-2.5 rounded-lg text-xs font-bold inline-flex items-center justify-center gap-1.5 border transition ${
+                        nextFixture.estado_convocatoria === 'Descartado'
+                          ? 'bg-rojo-fuego border-white text-white shadow'
+                          : 'bg-neutral-900 hover:bg-rojo-fuego border-neutral-700 text-neutral-300 hover:text-white'
+                      }`}
+                    >
+                      <XCircle className="w-4 h-4" /> No Puedo Asistir
+                    </button>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Entrenamientos y Sesiones Asignadas con Confirmación de Asistencia */}
             <section className="card-fenix p-5 space-y-3">
-              <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 pb-2">
                 <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
                   <Clock className="w-4 h-4 text-rojo-fuego" />
-                  SESIONES Y TRABAJOS ASIGNADOS ({assignedDrills.length})
+                  ENTRENAMIENTOS Y SESIONES ASIGNADAS ({assignedDrills.length})
                 </h3>
                 <span className="text-[11px] text-texto-secundario">
-                  Planificados por Entrenadores y Fisioterapia
+                  Confirma si asistirás o avisa si no puedes asistir
                 </span>
               </div>
               {assignedDrills.length === 0 ? (
                 <p className="text-xs text-texto-secundario">
-                  No hay sesiones específicas agendadas para los próximos días.
+                  No hay sesiones de entrenamiento agendadas para los próximos días.
                 </p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {assignedDrills.map((d) => (
-                    <div
-                      key={d.id_trabajo}
-                      className="bg-[#151515] border border-neutral-800 rounded-xl p-3.5 text-xs space-y-1.5"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-white">{d.titulo}</span>
-                        <span className="px-2 py-0.5 rounded bg-vinotinto/40 border border-vinotinto text-[10px] font-bold text-white">
-                          {d.rol_autor}
-                        </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {assignedDrills.map((d) => {
+                    const isConfirmed = d.estado_asistencia_jugador === 'Confirmado';
+                    const isDeclined = d.estado_asistencia_jugador === 'No_Asiste';
+                    const isBusy = busyTrainingId === d.id_trabajo;
+
+                    const respondTraining = async (estado) => {
+                      setBusyTrainingId(d.id_trabajo);
+                      try {
+                        await api.patch(
+                          `/players/${activePlayer.id_jugador}/entrenamientos/${d.id_trabajo}`,
+                          { estado }
+                        );
+                        setFeedbackMsg(
+                          estado === 'Confirmado'
+                            ? `Asistencia confirmada para el entrenamiento "${d.titulo}".`
+                            : `Se avisó inasistencia al entrenamiento "${d.titulo}".`
+                        );
+                        await loadPlayerDossier(selectedPlayerId);
+                      } catch (err) {
+                        alert(err.response?.data?.error || 'No se pudo registrar tu asistencia.');
+                      } finally {
+                        setBusyTrainingId(null);
+                      }
+                    };
+
+                    return (
+                      <div
+                        key={d.id_trabajo}
+                        className="bg-[#151515] border border-neutral-800 rounded-xl p-4 text-xs space-y-2.5 flex flex-col justify-between"
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-white text-sm">{d.titulo}</span>
+                            <span className="px-2 py-0.5 rounded bg-vinotinto/40 border border-vinotinto text-[10px] font-bold text-white shrink-0">
+                              {d.rol_autor}
+                            </span>
+                          </div>
+                          <p className="text-neutral-300">{d.descripcion_escrita}</p>
+                          <p className="text-[11px] text-amber-300 font-semibold">
+                            {String(d.fecha).slice(0, 10)} • {String(d.hora_inicio).slice(0, 5)}–
+                            {String(d.hora_fin).slice(0, 5)} • {d.espacio_cancha} ({d.cuadrante})
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-neutral-800 space-y-2">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-texto-secundario">Tu estado:</span>
+                            <span
+                              className={`font-bold ${
+                                isConfirmed
+                                  ? 'text-green-400'
+                                  : isDeclined
+                                  ? 'text-rojo-fuego'
+                                  : 'text-amber-300'
+                              }`}
+                            >
+                              {isConfirmed
+                                ? '✓ Confirmado'
+                                : isDeclined
+                                ? '✕ No puedo asistir'
+                                : 'Por confirmar'}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => respondTraining('Confirmado')}
+                              className={`flex-1 py-2 px-2.5 rounded-lg text-[11px] font-bold inline-flex items-center justify-center gap-1 border transition ${
+                                isConfirmed
+                                  ? 'bg-green-700 border-green-400 text-white'
+                                  : 'bg-green-950/60 hover:bg-green-700 border-green-700 text-green-200 hover:text-white'
+                              }`}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {isBusy ? '...' : isConfirmed ? 'Confirmado ✓' : 'Confirmar Asistencia'}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => respondTraining('No_Asiste')}
+                              className={`flex-1 py-2 px-2.5 rounded-lg text-[11px] font-bold inline-flex items-center justify-center gap-1 border transition ${
+                                isDeclined
+                                  ? 'bg-rojo-fuego border-white text-white'
+                                  : 'bg-neutral-900 hover:bg-rojo-fuego border-neutral-700 text-neutral-300 hover:text-white'
+                              }`}
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              {isDeclined ? 'No Asistiré' : 'No Puedo Asistir'}
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-neutral-300">{d.descripcion_escrita}</p>
-                      <p className="text-[11px] text-amber-300 font-semibold">
-                        {String(d.fecha).slice(0, 10)} • {String(d.hora_inicio).slice(0, 5)}–
-                        {String(d.hora_fin).slice(0, 5)} • {d.espacio_cancha} ({d.cuadrante})
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -292,7 +478,11 @@ export default function PortalPadres() {
             notifications={notifications}
             onMarkRead={loadNotifications}
             onConfirmAttendance={async (estado) => {
-              setFeedbackMsg(`Asistencia al juego registrada como "${estado}".`);
+              setFeedbackMsg(
+                estado === 'Confirmado'
+                  ? 'Asistencia al juego confirmada exitosamente.'
+                  : 'Se notificó que no podrás asistir al juego.'
+              );
               await Promise.all([loadNotifications(), loadPlayerDossier(selectedPlayerId)]);
             }}
             onGoToPayTx={(txId) => {
@@ -319,9 +509,18 @@ export default function PortalPadres() {
           <IndumentariaGpsModule
             activePlayer={activePlayer}
             nextFixture={nextFixture}
+            upcomingMatches={dossier?.upcomingMatches || []}
             bloqueoConvocatoria={bloqueoConvocatoria}
             onRsvpUpdated={async (estado) => {
-              setFeedbackMsg(`Confirmación de juego actualizada: ${estado}.`);
+              setFeedbackMsg(
+                estado === 'Confirmado'
+                  ? 'Asistencia al juego confirmada exitosamente.'
+                  : 'Se registró que no podrás asistir al juego.'
+              );
+              await loadPlayerDossier(selectedPlayerId);
+            }}
+            onSizesUpdated={async () => {
+              setFeedbackMsg('Tallas de indumentaria y calzado del jugador actualizadas.');
               await loadPlayerDossier(selectedPlayerId);
             }}
           />

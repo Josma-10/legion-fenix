@@ -2,7 +2,7 @@ const pool = require('../../config/db');
 const categoriasModel = require('../categorias/categorias.model');
 
 const getPublicHomeData = async () => {
-  const [fixturesRes, newsRes, productsRes, sponsorsRes, galleryRes, categories] = await Promise.all([
+  const [fixturesRes, newsRes, productsRes, sponsorsRes, galleryRes, heroSlidesRes, categories] = await Promise.all([
     pool.query(`
       SELECT p.*, c.nombre AS categoria_nombre, c.disciplina AS categoria_disciplina
       FROM partidos_fixture p
@@ -32,6 +32,15 @@ const getPublicHomeData = async () => {
       LEFT JOIN usuarios u ON u.id_usuario = h.publicado_por
       ORDER BY h.fecha_evento DESC, h.id_media DESC
     `),
+    pool
+      .query(`
+        SELECT s.*, u.nombre AS publicado_por_nombre
+        FROM hero_carousel_slides s
+        LEFT JOIN usuarios u ON u.id_usuario = s.publicado_por
+        WHERE s.activo = TRUE
+        ORDER BY s.orden ASC, s.id_slide DESC
+      `)
+      .catch(() => ({ rows: [] })),
     categoriasModel.getCategories(),
   ]);
 
@@ -46,6 +55,7 @@ const getPublicHomeData = async () => {
     products: productsRes.rows,
     sponsors: sponsorsRes.rows,
     gallery: galleryRes.rows,
+    heroSlides: heroSlidesRes.rows || [],
     categories,
   };
 };
@@ -213,10 +223,94 @@ const createVerifiedStoreOrder = async ({
   }
 };
 
+const getHeroSlides = async ({ includeInactive = false } = {}) => {
+  const where = includeInactive ? '' : 'WHERE s.activo = TRUE';
+  const { rows } = await pool.query(`
+    SELECT s.*, u.nombre AS publicado_por_nombre
+    FROM hero_carousel_slides s
+    LEFT JOIN usuarios u ON u.id_usuario = s.publicado_por
+    ${where}
+    ORDER BY s.orden ASC, s.id_slide DESC
+  `);
+  return rows;
+};
+
+const createHeroSlide = async ({
+  badge,
+  titulo,
+  subtitulo,
+  tipo_media,
+  media_url,
+  cta_label,
+  cta_href,
+  orden,
+  activo = true,
+  publicado_por,
+}) => {
+  const { rows } = await pool.query(
+    `INSERT INTO hero_carousel_slides (
+       badge, titulo, subtitulo, tipo_media, media_url, cta_label, cta_href, orden, activo, publicado_por
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING *`,
+    [
+      badge || 'LEGIÓN FÉNIX FC • EST. 2020 • RENDIRSE JAMÁS',
+      titulo,
+      subtitulo || '',
+      tipo_media === 'Video' ? 'Video' : 'Foto',
+      media_url,
+      cta_label || 'Inscribir Atleta',
+      cta_href || '/login?tab=register&tipo=representante',
+      Number(orden) || 1,
+      Boolean(activo),
+      publicado_por || null,
+    ]
+  );
+  return rows[0];
+};
+
+const updateHeroSlide = async (idSlide, data) => {
+  const { rows } = await pool.query(
+    `UPDATE hero_carousel_slides
+     SET badge = COALESCE($1, badge),
+         titulo = COALESCE($2, titulo),
+         subtitulo = COALESCE($3, subtitulo),
+         cta_label = COALESCE($4, cta_label),
+         cta_href = COALESCE($5, cta_href),
+         orden = COALESCE($6, orden),
+         activo = COALESCE($7, activo)
+     WHERE id_slide = $8
+     RETURNING *`,
+    [
+      data.badge !== undefined ? data.badge : null,
+      data.titulo !== undefined ? data.titulo : null,
+      data.subtitulo !== undefined ? data.subtitulo : null,
+      data.cta_label !== undefined ? data.cta_label : null,
+      data.cta_href !== undefined ? data.cta_href : null,
+      data.orden !== undefined ? Number(data.orden) : null,
+      data.activo !== undefined ? Boolean(data.activo) : null,
+      Number(idSlide),
+    ]
+  );
+  return rows[0] || null;
+};
+
+const deleteHeroSlide = async (idSlide) => {
+  const { rows } = await pool.query(
+    `DELETE FROM hero_carousel_slides WHERE id_slide = $1 RETURNING *`,
+    [Number(idSlide)]
+  );
+  return rows[0] || null;
+};
+
 module.exports = {
   getPublicHomeData,
   getHinchadaGallery,
   createHinchadaMedia,
   getFixtures,
   createVerifiedStoreOrder,
+  getHeroSlides,
+  createHeroSlide,
+  updateHeroSlide,
+  deleteHeroSlide,
 };

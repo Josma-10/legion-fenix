@@ -99,6 +99,7 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
     temporada: '2026-2027',
     talla_camiseta: '12',
     talla_short: '12',
+    talla_zapatos: '35',
   });
 
   const [consentimientoData, setConsentimientoData] = useState({
@@ -576,7 +577,7 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
 
         {step === 4 && (
           <div className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-texto-secundario mb-1">Temporada</label>
                 <input
@@ -587,28 +588,39 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-texto-secundario mb-1">Talla de Camiseta*</label>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">Talla de Camisa*</label>
                 <select
                   className="input-fenix"
                   value={uniformeData.talla_camiseta}
                   onChange={(e) => setUniformeData({ ...uniformeData, talla_camiseta: e.target.value })}
                 >
-                  {['6', '8', '10', '12', '14', '16', 'S', 'M', 'L', 'XL'].map((t) => (
+                  {['4', '6', '8', '10', '12', '14', '16', 'S', 'M', 'L', 'XL', 'XXL'].map((t) => (
                     <option key={t} value={t}>Talla {t}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-texto-secundario mb-1">Talla de Short*</label>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">Talla de Shorts*</label>
                 <select
                   className="input-fenix"
                   value={uniformeData.talla_short}
                   onChange={(e) => setUniformeData({ ...uniformeData, talla_short: e.target.value })}
                 >
-                  {['6', '8', '10', '12', '14', '16', 'S', 'M', 'L', 'XL'].map((t) => (
+                  {['4', '6', '8', '10', '12', '14', '16', 'S', 'M', 'L', 'XL', 'XXL'].map((t) => (
                     <option key={t} value={t}>Talla {t}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">Talla de Zapatos*</label>
+                <input
+                  type="text"
+                  className="input-fenix"
+                  placeholder="Ej: 35 / 40"
+                  value={uniformeData.talla_zapatos}
+                  onChange={(e) => setUniformeData({ ...uniformeData, talla_zapatos: e.target.value })}
+                  required
+                />
               </div>
             </div>
 

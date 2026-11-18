@@ -56,6 +56,7 @@ export default function RegisterRepresentanteForm({
     posicion_juego: 'Mediocampista Central',
     talla_camiseta: '10',
     talla_short: '10',
+    talla_zapatos: '34',
 
     // Archivos
     foto_perfil: null,
@@ -161,6 +162,7 @@ export default function RegisterRepresentanteForm({
       formData.append('posicion_juego', form.posicion_juego);
       formData.append('talla_camiseta', form.talla_camiseta);
       formData.append('talla_short', form.talla_short);
+      formData.append('talla_zapatos', form.talla_zapatos);
 
       formData.append('metodo_pago', form.metodo_pago);
       formData.append('referencia_bancaria', form.referencia_bancaria.trim());
@@ -441,8 +443,8 @@ export default function RegisterRepresentanteForm({
           </div>
         </div>
 
-        {/* Tallas de Uniforme, Estatura y Peso */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Tallas de Uniforme, Zapatos, Estatura y Peso */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
               Estatura (m)
@@ -471,7 +473,7 @@ export default function RegisterRepresentanteForm({
 
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Talla Camiseta
+              Talla Camisa*
             </label>
             <select
               className="input-fenix text-xs"
@@ -489,12 +491,13 @@ export default function RegisterRepresentanteForm({
               <option value="M">M</option>
               <option value="L">L</option>
               <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
             </select>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Talla Short
+              Talla Shorts*
             </label>
             <select
               className="input-fenix text-xs"
@@ -512,7 +515,22 @@ export default function RegisterRepresentanteForm({
               <option value="M">M</option>
               <option value="L">L</option>
               <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
             </select>
+          </div>
+
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-xs font-semibold text-texto-secundario mb-1">
+              Talla Zapatos*
+            </label>
+            <input
+              type="text"
+              className="input-fenix"
+              placeholder="Ej: 34"
+              value={form.talla_zapatos}
+              onChange={(e) => setForm({ ...form, talla_zapatos: e.target.value })}
+              required
+            />
           </div>
         </div>
 

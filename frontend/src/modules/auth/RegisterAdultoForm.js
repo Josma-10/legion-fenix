@@ -25,6 +25,9 @@ export default function RegisterAdultoForm({
     fecha_nacimiento: '',
     estatura: '',
     peso: '',
+    talla_camiseta: 'M',
+    talla_short: 'M',
+    talla_zapatos: '41',
     pierna_habil: 'Derecha',
     disciplina: 'Equipo de Fútbol Campo',
     categoria_preferida: 'Sub-20',
@@ -109,6 +112,9 @@ export default function RegisterAdultoForm({
       formData.append('fecha_nacimiento', adultForm.fecha_nacimiento);
       formData.append('estatura', adultForm.estatura);
       formData.append('peso', adultForm.peso);
+      formData.append('talla_camiseta', adultForm.talla_camiseta);
+      formData.append('talla_short', adultForm.talla_short);
+      formData.append('talla_zapatos', adultForm.talla_zapatos);
       formData.append('pierna_habil', adultForm.pierna_habil);
       formData.append('disciplina', adultForm.disciplina);
       formData.append('categoria_preferida', effectiveAdultCategory || 'Libre');
@@ -339,6 +345,51 @@ export default function RegisterAdultoForm({
             <option value="Cierre (Sala)">Cierre (Sala)</option>
             <option value="Ala (Sala)">Ala (Sala)</option>
           </select>
+        </div>
+      </div>
+
+      {/* Tallas de Indumentaria y Calzado */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-texto-secundario mb-1">
+            Talla de Camisa*
+          </label>
+          <select
+            className="input-fenix"
+            value={adultForm.talla_camiseta}
+            onChange={(e) => setAdultForm({ ...adultForm, talla_camiseta: e.target.value })}
+          >
+            {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map((t) => (
+              <option key={t} value={t}>Talla {t}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-texto-secundario mb-1">
+            Talla de Shorts*
+          </label>
+          <select
+            className="input-fenix"
+            value={adultForm.talla_short}
+            onChange={(e) => setAdultForm({ ...adultForm, talla_short: e.target.value })}
+          >
+            {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map((t) => (
+              <option key={t} value={t}>Talla {t}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-texto-secundario mb-1">
+            Talla de Zapatos*
+          </label>
+          <input
+            type="text"
+            className="input-fenix"
+            placeholder="Ej: 41 / 42"
+            value={adultForm.talla_zapatos}
+            onChange={(e) => setAdultForm({ ...adultForm, talla_zapatos: e.target.value })}
+            required
+          />
         </div>
       </div>
 

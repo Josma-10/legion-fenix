@@ -153,3 +153,71 @@ exports.createGalleryItem = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.getHeroSlides = async (req, res) => {
+  try {
+    const includeInactive = req.query.all === '1' || req.query.all === 'true';
+    const slides = await publicoModel.getHeroSlides({ includeInactive });
+    return res.json({ slides });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.createHeroSlide = async (req, res) => {
+  const { badge, titulo, subtitulo, tipo_media, media_url, cta_label, cta_href, orden } = req.body;
+  try {
+    const resolvedUrl = req.file ? getUploadedFileUrl(req, req.file) : media_url;
+    if (!titulo || !resolvedUrl) {
+      return res.status(400).json({
+        error: 'El título y el archivo (foto o video corto) o URL son obligatorios.',
+      });
+    }
+
+    const isVideoFile =
+      tipo_media === 'Video' ||
+      /\.(mp4|webm|mov|m4v)(\?|$)/i.test(String(resolvedUrl)) ||
+      (req.file?.mimetype || '').startsWith('video/');
+
+    const slide = await publicoModel.createHeroSlide({
+      badge: badge ? String(badge).trim() : undefined,
+      titulo: String(titulo).trim(),
+      subtitulo: String(subtitulo || '').trim(),
+      tipo_media: isVideoFile ? 'Video' : 'Foto',
+      media_url: resolvedUrl,
+      cta_label: cta_label ? String(cta_label).trim() : undefined,
+      cta_href: cta_href ? String(cta_href).trim() : undefined,
+      orden: Number(orden) || 1,
+      activo: true,
+      publicado_por: req.user?.id || null,
+    });
+    return res.status(201).json({
+      message: 'Slide multimedia publicado en el Carrusel Principal.',
+      slide,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateHeroSlide = async (req, res) => {
+  const idSlide = Number(req.params.id);
+  try {
+    const updated = await publicoModel.updateHeroSlide(idSlide, req.body || {});
+    if (!updated) return res.status(404).json({ error: 'Slide del carrusel no encontrado.' });
+    return res.json({ message: 'Slide del carrusel actualizado.', slide: updated });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteHeroSlide = async (req, res) => {
+  const idSlide = Number(req.params.id);
+  try {
+    const deleted = await publicoModel.deleteHeroSlide(idSlide);
+    if (!deleted) return res.status(404).json({ error: 'Slide del carrusel no encontrado.' });
+    return res.json({ message: 'Slide eliminado del carrusel principal.', slide: deleted });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};

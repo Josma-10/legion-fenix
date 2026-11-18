@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email VARCHAR(120) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     telefono VARCHAR(30),
+    talla_camiseta VARCHAR(15),
+    talla_short VARCHAR(15),
+    talla_zapatos VARCHAR(15),
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -118,6 +121,7 @@ CREATE TABLE IF NOT EXISTS uniformes_asignados (
     temporada VARCHAR(20) NOT NULL,
     talla_camiseta VARCHAR(10),
     talla_short VARCHAR(10),
+    talla_zapatos VARCHAR(15),
     kit_titular_color VARCHAR(80) DEFAULT 'Camiseta Vinotinto, Shorts Negros, Medias Vinotinto',
     kit_alternativo_color VARCHAR(80) DEFAULT 'Rojo y Blanco',
     entregado BOOLEAN DEFAULT FALSE
@@ -409,6 +413,33 @@ CREATE TABLE IF NOT EXISTS hinchada_galeria (
     thumbnail_url TEXT,
     fecha_evento DATE DEFAULT CURRENT_DATE,
     destacado BOOLEAN DEFAULT TRUE,
+    publicado_por INT REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 17. CONFIRMACIONES DE ASISTENCIA A ENTRENAMIENTOS (JUGADOR / REPRESENTANTE)
+CREATE TABLE IF NOT EXISTS confirmaciones_entrenamiento (
+    id_confirmacion SERIAL PRIMARY KEY,
+    id_trabajo INT NOT NULL REFERENCES trabajos_campo(id_trabajo) ON DELETE CASCADE,
+    id_jugador INT NOT NULL REFERENCES jugadores(id_jugador) ON DELETE CASCADE,
+    estado VARCHAR(25) NOT NULL CHECK (estado IN ('Confirmado', 'No_Asiste')),
+    observacion TEXT,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (id_trabajo, id_jugador)
+);
+
+-- 18. CARRUSEL PRINCIPAL DINÁMICO (FOTOS DE JUGADORES Y VIDEOS PROMOCIONALES)
+CREATE TABLE IF NOT EXISTS hero_carousel_slides (
+    id_slide SERIAL PRIMARY KEY,
+    badge VARCHAR(140) DEFAULT 'LEGIÓN FÉNIX FC • EST. 2020 • RENDIRSE JAMÁS',
+    titulo VARCHAR(180) NOT NULL,
+    subtitulo TEXT,
+    tipo_media VARCHAR(15) NOT NULL DEFAULT 'Foto' CHECK (tipo_media IN ('Foto', 'Video')),
+    media_url TEXT NOT NULL,
+    cta_label VARCHAR(80) DEFAULT 'Inscribir Atleta',
+    cta_href VARCHAR(200) DEFAULT '/login?tab=register&tipo=representante',
+    orden INT NOT NULL DEFAULT 1,
+    activo BOOLEAN DEFAULT TRUE,
     publicado_por INT REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

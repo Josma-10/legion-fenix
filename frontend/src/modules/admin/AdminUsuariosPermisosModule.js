@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Shield, UserPlus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Shield, UserPlus, CheckCircle2, AlertCircle, Shirt, Save, X } from 'lucide-react';
 import PasswordStrengthSemaforo, {
   evaluatePasswordSemaforo,
 } from '../../components/PasswordStrengthSemaforo';
@@ -14,19 +14,32 @@ const ROLE_OPTIONS = [
   'ATLETA',
 ];
 
+const CLOTH_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+
 export default function AdminUsuariosPermisosModule({ currentUserId }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [editingSizesUser, setEditingSizesUser] = useState(null);
+  const [sizesDraft, setSizesDraft] = useState({
+    talla_camiseta: 'M',
+    talla_short: 'M',
+    talla_zapatos: '',
+  });
+  const [savingSizes, setSavingSizes] = useState(false);
+
   const [form, setForm] = useState({
     nombre: '',
     email: '',
     password: '',
     telefono: '',
     documento_identidad: '',
-    rol: 'ANALISTA_ADMIN',
+    rol: 'ENTRENADOR',
+    talla_camiseta: 'M',
+    talla_short: 'M',
+    talla_zapatos: '41',
   });
 
   const passwordCheck = evaluatePasswordSemaforo(form.password);
@@ -65,7 +78,10 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
         password: '',
         telefono: '',
         documento_identidad: '',
-        rol: 'ANALISTA_ADMIN',
+        rol: 'ENTRENADOR',
+        talla_camiseta: 'M',
+        talla_short: 'M',
+        talla_zapatos: '41',
       });
       await loadUsers();
     } catch (err) {
@@ -87,6 +103,33 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
     }
   };
 
+  const openSizesModal = (u) => {
+    setEditingSizesUser(u);
+    setSizesDraft({
+      talla_camiseta: u.talla_camiseta || 'M',
+      talla_short: u.talla_short || 'M',
+      talla_zapatos: u.talla_zapatos || '',
+    });
+  };
+
+  const handleSaveUserSizes = async (e) => {
+    e.preventDefault();
+    if (!editingSizesUser) return;
+    setSavingSizes(true);
+    setErrorMsg('');
+    setFeedback('');
+    try {
+      const res = await api.patch(`/admin/users/${editingSizesUser.id_usuario}/sizes`, sizesDraft);
+      setFeedback(res.data.message);
+      setEditingSizesUser(null);
+      await loadUsers();
+    } catch (err) {
+      setErrorMsg(err.response?.data?.error || 'No se pudieron actualizar las tallas.');
+    } finally {
+      setSavingSizes(false);
+    }
+  };
+
   return (
     <section className="space-y-6">
       <div className="card-fenix p-5 border-l-4 border-l-rojo-fuego">
@@ -94,10 +137,10 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
           <Shield className="w-4 h-4" /> Exclusivo Administrador General
         </span>
         <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white mt-1">
-          GESTIÓN DE USUARIOS, ROLES Y PERMISOS RBAC
+          GESTIÓN DE USUARIOS, ENTRENADORES, TALLAS Y PERMISOS RBAC
         </h2>
         <p className="text-xs text-texto-secundario mt-1">
-          Crea cuentas para Analista Administrativo, Entrenadores, Fisioterapeutas o Representantes con política de clave segura (Semáforo Verde).
+          Crea cuentas para Entrenadores, Analistas Administrativos, Fisioterapeutas o Representantes con registro de tallas de camisa, shorts y zapatos.
         </p>
       </div>
 
@@ -118,7 +161,7 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <form onSubmit={handleCreateUser} className="lg:col-span-5 card-fenix p-5 space-y-3">
           <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
-            <UserPlus className="w-4 h-4 text-rojo-fuego" /> Crear Usuario Institucional
+            <UserPlus className="w-4 h-4 text-rojo-fuego" /> Crear Usuario / Entrenador
           </h3>
           <input
             type="text"
@@ -133,7 +176,7 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
             className="input-fenix text-xs"
             placeholder="Correo electrónico institucional*"
             value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onChange={(e) => setForm({ ...form, email: e.target.value.replace(/\s+/g, '') })}
             required
           />
           <div className="grid grid-cols-2 gap-2">
@@ -142,8 +185,8 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
               value={form.rol}
               onChange={(e) => setForm({ ...form, rol: e.target.value })}
             >
-              <option value="ANALISTA_ADMIN">Analista Admin</option>
               <option value="ENTRENADOR">Entrenador</option>
+              <option value="ANALISTA_ADMIN">Analista Admin</option>
               <option value="FISIO">Fisioterapeuta</option>
               <option value="ADMINISTRADOR">Administrador</option>
               <option value="REPRESENTANTE">Representante</option>
@@ -156,6 +199,7 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
               onChange={(e) => setForm({ ...form, telefono: e.target.value })}
             />
           </div>
+
           {form.rol === 'REPRESENTANTE' && (
             <input
               type="text"
@@ -165,6 +209,50 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
               onChange={(e) => setForm({ ...form, documento_identidad: e.target.value })}
             />
           )}
+
+          {/* Tallas de Indumentaria y Calzado (Especialmente Entrenadores / Staff) */}
+          <div className="bg-[#141418] border border-neutral-800 rounded-lg p-3 space-y-2">
+            <p className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+              <Shirt className="w-3.5 h-3.5" /> Tallas de Uniforme y Calzado ({form.rol})
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[10px] text-texto-secundario mb-1">Camisa</label>
+                <select
+                  className="input-fenix text-xs py-1.5"
+                  value={form.talla_camiseta}
+                  onChange={(e) => setForm({ ...form, talla_camiseta: e.target.value })}
+                >
+                  {CLOTH_SIZES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-texto-secundario mb-1">Shorts</label>
+                <select
+                  className="input-fenix text-xs py-1.5"
+                  value={form.talla_short}
+                  onChange={(e) => setForm({ ...form, talla_short: e.target.value })}
+                >
+                  {CLOTH_SIZES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-texto-secundario mb-1">Zapatos</label>
+                <input
+                  type="text"
+                  className="input-fenix text-xs py-1.5"
+                  placeholder="Ej: 42"
+                  value={form.talla_zapatos}
+                  onChange={(e) => setForm({ ...form, talla_zapatos: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
           <div>
             <input
               type="password"
@@ -172,7 +260,7 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
               placeholder="Contraseña segura (8–20 car.)*"
               maxLength={20}
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onChange={(e) => setForm({ ...form, password: e.target.value.replace(/\s+/g, '') })}
               required
             />
             <PasswordStrengthSemaforo password={form.password} />
@@ -188,25 +276,42 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
 
         <div className="lg:col-span-7 card-fenix p-5">
           <h3 className="font-display text-xl font-bold text-white mb-4">
-            CUENTAS ACTIVAS Y ASIGNACIÓN DE ROLES ({users.length})
+            CUENTAS ACTIVAS, TALLAS Y ROLES ({users.length})
           </h3>
           {loading ? (
             <p className="text-xs text-texto-secundario py-6 text-center">Cargando usuarios...</p>
           ) : (
-            <div className="overflow-x-auto max-h-[460px]">
-              <table className="w-full text-left text-xs border-collapse min-w-[520px]">
+            <div className="overflow-x-auto max-h-[520px]">
+              <table className="w-full text-left text-xs border-collapse min-w-[600px]">
                 <thead>
                   <tr className="border-b border-neutral-700 text-texto-secundario uppercase">
-                    <th className="py-2">Nombre</th>
-                    <th className="py-2">Correo / Usuario</th>
+                    <th className="py-2">Nombre / Correo</th>
+                    <th className="py-2">Indumentaria (C / S / Zap)</th>
                     <th className="py-2 text-right">Rol Asignado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((u) => (
                     <tr key={u.id_usuario} className="border-b border-neutral-800">
-                      <td className="py-2.5 font-bold text-white">{u.nombre}</td>
-                      <td className="py-2.5 text-neutral-300">{u.email}</td>
+                      <td className="py-2.5">
+                        <p className="font-bold text-white">{u.nombre}</p>
+                        <p className="text-[11px] text-neutral-400">{u.email}</p>
+                      </td>
+                      <td className="py-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-neutral-200 font-mono bg-[#151515] border border-neutral-800 px-2 py-0.5 rounded">
+                            {u.talla_camiseta || '-'} / {u.talla_short || '-'} /{' '}
+                            <strong className="text-amber-300">{u.talla_zapatos || '-'}</strong>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => openSizesModal(u)}
+                            className="text-[11px] text-rojo-fuego hover:text-white font-bold underline"
+                          >
+                            Tallas
+                          </button>
+                        </div>
+                      </td>
                       <td className="py-2.5 text-right">
                         <select
                           disabled={u.id_usuario === currentUserId}
@@ -229,6 +334,91 @@ export default function AdminUsuariosPermisosModule({ currentUserId }) {
           )}
         </div>
       </div>
+
+      {/* Modal de Edición de Tallas para Entrenadores / Staff */}
+      {editingSizesUser && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setEditingSizesUser(null)}
+        >
+          <form
+            onSubmit={handleSaveUserSizes}
+            onClick={(e) => e.stopPropagation()}
+            className="card-fenix max-w-md w-full p-5 border-vinotinto space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-rojo-fuego">
+                  Indumentaria y Calzado ({editingSizesUser.rol})
+                </p>
+                <h4 className="font-display text-xl font-bold text-white">
+                  {editingSizesUser.nombre}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSizesUser(null)}
+                className="p-1.5 rounded bg-neutral-800 text-white hover:bg-rojo-fuego"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">
+                  Talla Camisa
+                </label>
+                <select
+                  className="input-fenix text-xs"
+                  value={sizesDraft.talla_camiseta}
+                  onChange={(e) => setSizesDraft({ ...sizesDraft, talla_camiseta: e.target.value })}
+                >
+                  {CLOTH_SIZES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">
+                  Talla Shorts
+                </label>
+                <select
+                  className="input-fenix text-xs"
+                  value={sizesDraft.talla_short}
+                  onChange={(e) => setSizesDraft({ ...sizesDraft, talla_short: e.target.value })}
+                >
+                  {CLOTH_SIZES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">
+                  Talla Zapatos
+                </label>
+                <input
+                  type="text"
+                  className="input-fenix text-xs"
+                  placeholder="Ej: 42"
+                  value={sizesDraft.talla_zapatos}
+                  onChange={(e) => setSizesDraft({ ...sizesDraft, talla_zapatos: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={savingSizes}
+              className="btn-cta w-full text-xs py-2.5"
+            >
+              <Save className="w-4 h-4" />
+              {savingSizes ? 'Guardando...' : 'Guardar Tallas'}
+            </button>
+          </form>
+        </div>
+      )}
     </section>
   );
 }

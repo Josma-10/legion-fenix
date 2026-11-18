@@ -65,15 +65,20 @@ export default function BandejaNotificacionesModule({
 
   const handleRsvp = async (notif, estado) => {
     const idJugador = notif.id_jugador;
-    const idPartido = notif.metadata_json?.id_partido;
+    const idPartido = notif.metadata_json?.id_partido || notif.referencia_id;
     if (!idJugador || !idPartido) return;
     setBusyId(`rsvp-${notif.id_notificacion}`);
     try {
-      await api.patch(`/players/${idJugador}/convocatorias/${idPartido}`, { estado });
+      await api.patch(`/players/${idJugador}/convocatorias/${idPartido}`, {
+        estado_convocatoria: estado,
+        estado,
+      });
       if (!notif.leida) {
         await api.patch(`/players/notifications/${notif.id_notificacion}/read`).catch(() => {});
       }
       if (onConfirmAttendance) await onConfirmAttendance(estado, notif);
+    } catch (err) {
+      alert(err.response?.data?.error || 'No se pudo actualizar la confirmación de asistencia.');
     } finally {
       setBusyId(null);
     }

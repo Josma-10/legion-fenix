@@ -19,6 +19,7 @@ router.patch('/finance/cuadrantes/:id', checkRole(['ADMINISTRADOR']), adminContr
 router.get('/users', checkRole(['ADMINISTRADOR']), adminController.listUsers);
 router.post('/users', checkRole(['ADMINISTRADOR']), adminController.createUser);
 router.patch('/users/:id/role', checkRole(['ADMINISTRADOR']), adminController.updateUserRole);
+router.patch('/users/:id/sizes', checkRole(['ADMINISTRADOR']), adminController.updateUserSizes);
 
 router.get('/notifications/status', checkRole(['ADMINISTRADOR']), adminController.getNotificationsStatus);
 router.post('/notifications/whatsapp-qr/connect', checkRole(['ADMINISTRADOR']), adminController.connectWhatsAppQr);

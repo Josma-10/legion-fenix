@@ -8,6 +8,9 @@ const findByUsernameOrEmail = async (identifier) => {
       u.email,
       u.password_hash,
       u.telefono,
+      u.talla_camiseta,
+      u.talla_short,
+      u.talla_zapatos,
       r.nombre AS rol,
       rep.id_representante,
       rep.documento_identidad,
@@ -31,6 +34,9 @@ const findById = async (idUsuario) => {
       u.nombre,
       u.email,
       u.telefono,
+      u.talla_camiseta,
+      u.talla_short,
+      u.talla_zapatos,
       u.creado_en,
       r.nombre AS rol,
       rep.id_representante,
@@ -114,6 +120,9 @@ const createAdultAthleteUser = async ({
   genero,
   estatura_m,
   peso_kg,
+  talla_camiseta = 'M',
+  talla_short = 'M',
+  talla_zapatos = null,
   foto_url,
   posicion_habitual,
   pierna_habil,
@@ -140,10 +149,10 @@ const createAdultAthleteUser = async ({
     const idRol = roleRes.rows[0].id_rol;
 
     const userRes = await client.query(
-      `INSERT INTO usuarios (id_rol, nombre, email, password_hash, telefono)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id_usuario, nombre, email, telefono`,
-      [idRol, nombreCompleto, email, passwordHash, telefono]
+      `INSERT INTO usuarios (id_rol, nombre, email, password_hash, telefono, talla_camiseta, talla_short, talla_zapatos)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id_usuario, nombre, email, telefono, talla_camiseta, talla_short, talla_zapatos`,
+      [idRol, nombreCompleto, email, passwordHash, telefono, talla_camiseta || 'M', talla_short || 'M', talla_zapatos || null]
     );
     const user = userRes.rows[0];
 
@@ -189,11 +198,11 @@ const createAdultAthleteUser = async ({
 
     await client.query(
       `INSERT INTO uniformes_asignados (
-        id_jugador, temporada, talla_camiseta, talla_short,
+        id_jugador, temporada, talla_camiseta, talla_short, talla_zapatos,
         kit_titular_color, kit_alternativo_color, entregado
       )
-      VALUES ($1, '2026-2027', 'M', 'M', 'Camiseta Vinotinto, Shorts Negros, Medias Vinotinto', 'Rojo y Blanco', FALSE)`,
-      [player.id_jugador]
+      VALUES ($1, '2026-2027', $2, $3, $4, 'Camiseta Vinotinto, Shorts Negros, Medias Vinotinto', 'Rojo y Blanco', FALSE)`,
+      [player.id_jugador, talla_camiseta || 'M', talla_short || 'M', talla_zapatos || null]
     );
 
     await client.query(
@@ -211,7 +220,7 @@ const createAdultAthleteUser = async ({
         telefono_pago, comprobante_url, comprobante_estado, tasa_bcv, monto_bs, fecha_pago
       )
       VALUES (
-        $1, $2, 'Inscripcion', $3, 35.00,
+        $1, $2, 'Inscripcion', $3, 15.00,
         CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days', 'Pendiente', $4, $5,
         $6, $7, 'En_Revision', $8, $9, CURRENT_TIMESTAMP
       )
@@ -264,6 +273,7 @@ const createMinorWithRepresentativeUser = async ({
   peso_kg,
   talla_camiseta = '10',
   talla_short = '10',
+  talla_zapatos = null,
   foto_url,
   posicion_habitual,
   pierna_habil,
@@ -339,11 +349,11 @@ const createMinorWithRepresentativeUser = async ({
 
     await client.query(
       `INSERT INTO uniformes_asignados (
-        id_jugador, temporada, talla_camiseta, talla_short,
+        id_jugador, temporada, talla_camiseta, talla_short, talla_zapatos,
         kit_titular_color, kit_alternativo_color, entregado
       )
-      VALUES ($1, '2026-2027', $2, $3, 'Camiseta Vinotinto, Shorts Negros, Medias Vinotinto', 'Rojo y Blanco', FALSE)`,
-      [player.id_jugador, talla_camiseta || '10', talla_short || '10']
+      VALUES ($1, '2026-2027', $2, $3, $4, 'Camiseta Vinotinto, Shorts Negros, Medias Vinotinto', 'Rojo y Blanco', FALSE)`,
+      [player.id_jugador, talla_camiseta || '10', talla_short || '10', talla_zapatos || null]
     );
 
     await client.query(
@@ -397,10 +407,29 @@ const createMinorWithRepresentativeUser = async ({
   }
 };
 
+const updateUserSizes = async (idUsuario, { talla_camiseta, talla_short, talla_zapatos }) => {
+  const { rows } = await pool.query(
+    `UPDATE usuarios
+     SET talla_camiseta = COALESCE(NULLIF($1, ''), talla_camiseta),
+         talla_short = COALESCE(NULLIF($2, ''), talla_short),
+         talla_zapatos = COALESCE(NULLIF($3, ''), talla_zapatos)
+     WHERE id_usuario = $4
+     RETURNING id_usuario, nombre, email, telefono, talla_camiseta, talla_short, talla_zapatos`,
+    [
+      talla_camiseta ? String(talla_camiseta).trim() : '',
+      talla_short ? String(talla_short).trim() : '',
+      talla_zapatos ? String(talla_zapatos).trim() : '',
+      Number(idUsuario),
+    ]
+  );
+  return rows[0] || null;
+};
+
 module.exports = {
   findByUsernameOrEmail,
   findById,
   createRepresentativeUser,
   createAdultAthleteUser,
   createMinorWithRepresentativeUser,
+  updateUserSizes,
 };

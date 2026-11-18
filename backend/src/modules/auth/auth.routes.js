@@ -23,5 +23,6 @@ router.post(
   authController.registerMinorAthlete
 );
 router.get('/me', verifyToken, authController.me);
+router.patch('/profile-sizes', verifyToken, authController.updateProfileSizes);
 
 module.exports = router;

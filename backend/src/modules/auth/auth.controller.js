@@ -94,6 +94,9 @@ exports.login = async (req, res) => {
         email: user.email,
         rol: user.rol,
         telefono: user.telefono,
+        talla_camiseta: user.talla_camiseta || null,
+        talla_short: user.talla_short || null,
+        talla_zapatos: user.talla_zapatos || null,
         id_representante: user.id_representante || null,
         documento_identidad: user.documento_identidad || null,
         parentesco: user.parentesco || null,
@@ -182,6 +185,9 @@ exports.registerAthlete = async (req, res) => {
     genero,
     estatura,
     peso,
+    talla_camiseta,
+    talla_short,
+    talla_zapatos,
     pierna_habil,
     disciplina,
     modalidad,
@@ -298,7 +304,7 @@ exports.registerAthlete = async (req, res) => {
 
     const bcvService = require('../../services/bcvService');
     const bcv = await bcvService.getBcvRate();
-    const converted = bcvService.convertUsdToBs(35, bcv);
+    const converted = bcvService.convertEurToBs ? bcvService.convertEurToBs(15, bcv) : bcvService.convertUsdToBs(15, bcv);
 
     const created = await authModel.createAdultAthleteUser({
       nombre: firstName,
@@ -312,6 +318,9 @@ exports.registerAthlete = async (req, res) => {
       genero: genero === 'Femenino' ? 'Femenino' : 'Masculino',
       estatura_m: estaturaNum,
       peso_kg: pesoNum,
+      talla_camiseta: talla_camiseta || 'M',
+      talla_short: talla_short || 'M',
+      talla_zapatos: talla_zapatos ? String(talla_zapatos).trim() : null,
       foto_url: fotoUrl,
       posicion_habitual: posicion_juego,
       pierna_habil,
@@ -371,6 +380,9 @@ exports.me = async (req, res) => {
         email: user.email,
         rol: user.rol,
         telefono: user.telefono,
+        talla_camiseta: user.talla_camiseta || null,
+        talla_short: user.talla_short || null,
+        talla_zapatos: user.talla_zapatos || null,
         id_representante: user.id_representante || null,
         documento_identidad: user.documento_identidad || null,
         parentesco: user.parentesco || null,
@@ -404,6 +416,7 @@ exports.registerMinorAthlete = async (req, res) => {
     modalidad,
     talla_camiseta,
     talla_short,
+    talla_zapatos,
     metodo_pago,
     referencia_bancaria,
     telefono_pago,
@@ -520,6 +533,7 @@ exports.registerMinorAthlete = async (req, res) => {
       peso_kg: Number.isFinite(pesoNum) && pesoNum > 0 ? pesoNum : 38,
       talla_camiseta: talla_camiseta || '10',
       talla_short: talla_short || '10',
+      talla_zapatos: talla_zapatos ? String(talla_zapatos).trim() : null,
       foto_url: fotoUrl,
       posicion_habitual: posicion_juego || 'Delantero Centro',
       pierna_habil: pierna_habil || 'Derecho',
@@ -559,6 +573,34 @@ exports.registerMinorAthlete = async (req, res) => {
     if (error.code === '23505') {
       return res.status(409).json({ error: 'El correo electrónico o la cédula ya se encuentran registrados.' });
     }
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateProfileSizes = async (req, res) => {
+  const { talla_camiseta, talla_short, talla_zapatos } = req.body;
+  try {
+    const updated = await authModel.updateUserSizes(req.user.id, {
+      talla_camiseta,
+      talla_short,
+      talla_zapatos,
+    });
+    if (!updated) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+    return res.json({
+      message: 'Tallas de indumentaria y calzado actualizadas correctamente.',
+      user: {
+        id: updated.id_usuario,
+        nombre: updated.nombre,
+        email: updated.email,
+        telefono: updated.telefono,
+        talla_camiseta: updated.talla_camiseta,
+        talla_short: updated.talla_short,
+        talla_zapatos: updated.talla_zapatos,
+      },
+    });
+  } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 };

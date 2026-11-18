@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Users,
   QrCode,
+  Film,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import AdminAccesosModulosBanner from '../../modules/admin/AdminAccesosModulosBanner';
@@ -17,6 +18,7 @@ import AdminFinanzasEquilibrioModule from '../../modules/admin/AdminFinanzasEqui
 import AdminCobranzasTiendaModule from '../../modules/admin/AdminCobranzasTiendaModule';
 import AdminUsuariosPermisosModule from '../../modules/admin/AdminUsuariosPermisosModule';
 import AdminNotificacionesQrSmtpModule from '../../modules/admin/AdminNotificacionesQrSmtpModule';
+import AdminCarruselHeroModule from '../../modules/admin/AdminCarruselHeroModule';
 import InjuryBodyMapModule from '../../modules/fisio/InjuryBodyMapModule';
 import api from '../../utils/api';
 import { useAuthGuard } from '../../utils/auth';
@@ -204,6 +206,14 @@ export default function AdminPanel() {
           >
             <Receipt className="w-4 h-4" /> Comprobantes y Tienda
           </button>
+          <button
+            onClick={() => setActiveTab('carrusel')}
+            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
+              activeTab === 'carrusel' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
+            }`}
+          >
+            <Film className="w-4 h-4" /> Carrusel Principal
+          </button>
 
           {isAdmin && (
             <>
@@ -264,6 +274,8 @@ export default function AdminPanel() {
             onFeedback={setFeedback}
           />
         )}
+
+        {activeTab === 'carrusel' && <AdminCarruselHeroModule />}
 
         {isAdmin && activeTab === 'clinica' && (
           <div className="space-y-4">

@@ -342,6 +342,18 @@ export default function PlayerCardModule({ player, evaluation = null, compact = 
               <span className="text-neutral-400">Club</span>
               <span className="font-bold text-rojo-fuego uppercase">Legión Fénix</span>
             </div>
+            <div className="flex items-center justify-between py-1.5 border-b border-white/10">
+              <span className="text-neutral-400">Talla Camisa / Shorts</span>
+              <span className="font-bold text-white">
+                {player.talla_camiseta || 'N/D'} / {player.talla_short || 'N/D'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-1.5 border-b border-white/10">
+              <span className="text-neutral-400">Talla Zapatos</span>
+              <span className="font-bold text-amber-300">
+                {player.talla_zapatos || 'Por registrar'}
+              </span>
+            </div>
           </div>
 
           {/* Fortalezas y Debilidades */}

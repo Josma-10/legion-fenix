@@ -38,6 +38,7 @@ const getPlayersList = async ({ idRepresentante = null } = {}) => {
       unif.temporada,
       unif.talla_camiseta,
       unif.talla_short,
+      unif.talla_zapatos,
       unif.kit_titular_color,
       unif.kit_alternativo_color,
       unif.entregado AS uniforme_entregado,
@@ -129,6 +130,7 @@ const getPlayerById = async (idJugador) => {
       unif.temporada,
       unif.talla_camiseta,
       unif.talla_short,
+      unif.talla_zapatos,
       unif.kit_titular_color,
       unif.kit_alternativo_color,
       unif.entregado AS uniforme_entregado,
@@ -209,15 +211,59 @@ const getNextFixtureAndLogisticsForPlayer = async (idJugador, idCategoria) => {
   const { rows } = await pool.query(matchQuery, [idJugador, idCategoria || null]);
   if (rows.length > 0) return rows[0];
 
-  const fallback = await pool.query(`
-    SELECT p.*, c.nombre AS categoria_nombre, NULL::text AS estado_convocatoria, NULL::text AS convocatoria_observacion
-    FROM partidos_fixture p
-    LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
-    WHERE p.estado = 'Programado'
-    ORDER BY p.fecha_hora ASC
-    LIMIT 1
-  `);
+  const fallback = await pool.query(
+    `SELECT
+       p.*,
+       c.nombre AS categoria_nombre,
+       c.disciplina AS categoria_disciplina,
+       conv.estado_convocatoria,
+       conv.observacion AS convocatoria_observacion
+     FROM partidos_fixture p
+     LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
+     LEFT JOIN convocatorias conv ON conv.id_partido = p.id_partido AND conv.id_jugador = $1
+     WHERE p.estado = 'Programado'
+     ORDER BY p.fecha_hora ASC
+     LIMIT 1`,
+    [idJugador]
+  );
   return fallback.rows[0] || null;
+};
+
+const getUpcomingMatchesForPlayer = async (idJugador, idCategoria) => {
+  const { rows } = await pool.query(
+    `SELECT
+       p.*,
+       c.nombre AS categoria_nombre,
+       c.disciplina AS categoria_disciplina,
+       conv.estado_convocatoria,
+       conv.observacion AS convocatoria_observacion
+     FROM partidos_fixture p
+     LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
+     LEFT JOIN convocatorias conv ON conv.id_partido = p.id_partido AND conv.id_jugador = $1
+     WHERE p.estado = 'Programado'
+       AND ($2::int IS NULL OR p.id_categoria = $2 OR conv.id_convocatoria IS NOT NULL)
+     ORDER BY p.fecha_hora ASC
+     LIMIT 8`,
+    [idJugador, idCategoria || null]
+  );
+  if (rows.length > 0) return rows;
+
+  const fallback = await pool.query(
+    `SELECT
+       p.*,
+       c.nombre AS categoria_nombre,
+       c.disciplina AS categoria_disciplina,
+       conv.estado_convocatoria,
+       conv.observacion AS convocatoria_observacion
+     FROM partidos_fixture p
+     LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
+     LEFT JOIN convocatorias conv ON conv.id_partido = p.id_partido AND conv.id_jugador = $1
+     WHERE p.estado = 'Programado'
+     ORDER BY p.fecha_hora ASC
+     LIMIT 5`,
+    [idJugador]
+  );
+  return fallback.rows;
 };
 
 const getPlayerStats = async (idJugador) => {
@@ -246,10 +292,15 @@ const getAssignedDrillsForPlayer = async (idJugador, idCategoria) => {
     `SELECT
        t.*,
        u.nombre AS autor_nombre,
-       c.nombre AS categoria_nombre
+       c.nombre AS categoria_nombre,
+       ce.estado AS estado_asistencia_jugador,
+       ce.observacion AS observacion_asistencia,
+       ce.actualizado_en AS asistencia_actualizada_en
      FROM trabajos_campo t
      LEFT JOIN usuarios u ON u.id_usuario = t.id_autor
      LEFT JOIN categorias c ON c.id_categoria = t.id_categoria
+     LEFT JOIN confirmaciones_entrenamiento ce
+       ON ce.id_trabajo = t.id_trabajo AND ce.id_jugador = $1
      WHERE (t.id_jugador = $1 OR (t.id_jugador IS NULL AND t.id_categoria = $2))
        AND t.fecha >= CURRENT_DATE - INTERVAL '2 days'
      ORDER BY t.fecha ASC, t.hora_inicio ASC
@@ -383,15 +434,16 @@ const registerCompleteAthlete = async ({
 
     await client.query(
       `INSERT INTO uniformes_asignados (
-        id_jugador, temporada, talla_camiseta, talla_short,
+        id_jugador, temporada, talla_camiseta, talla_short, talla_zapatos,
         kit_titular_color, kit_alternativo_color, entregado
       )
-      VALUES ($1, $2, $3, $4, $5, $6, FALSE)`,
+      VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE)`,
       [
         jugador.id_jugador,
         uniformeData.temporada || '2026-2027',
         uniformeData.talla_camiseta || 'M',
         uniformeData.talla_short || 'M',
+        uniformeData.talla_zapatos ? String(uniformeData.talla_zapatos).trim() : null,
         'Camiseta Vinotinto, Shorts Negros, Medias Vinotinto',
         'Rojo y Blanco',
       ]
@@ -416,7 +468,7 @@ const registerCompleteAthlete = async ({
         id_jugador, id_representante, concepto, descripcion_detalle, monto,
         fecha_emision, fecha_vencimiento, estado_pago
       )
-      VALUES ($1, $2, 'Inscripcion', 'Inscripción Oficial Temporada 2026-2027 + Kit', 35.00,
+      VALUES ($1, $2, 'Inscripcion', 'Inscripción Oficial Temporada 2026-2027', 15.00,
               CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days', 'Pendiente')`,
       [jugador.id_jugador, finalRepId]
     );
@@ -483,6 +535,7 @@ const updatePlayerConvocatoria = async ({
   idJugador,
   estadoConvocatoria,
   observacion = '',
+  idUsuario = null,
 }) => {
   const { rows } = await pool.query(
     `INSERT INTO convocatorias (id_partido, id_jugador, estado_convocatoria, observacion)
@@ -493,13 +546,132 @@ const updatePlayerConvocatoria = async ({
      RETURNING *`,
     [Number(idPartido), Number(idJugador), estadoConvocatoria, observacion || '']
   );
+
+  // Sincronizar aviso con tabla asistencias (tipo_sesion = 'Juego') para visibilidad de entrenadores/admin
+  try {
+    const matchRes = await pool.query(
+      `SELECT p.fecha_hora::date AS fecha, p.id_categoria, COALESCE(c.cuadrante_asignado, 'Cuadrante Norte - Campo') AS cuadrante
+       FROM partidos_fixture p
+       LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
+       WHERE p.id_partido = $1 LIMIT 1`,
+      [Number(idPartido)]
+    );
+    if (matchRes.rows.length > 0) {
+      const m = matchRes.rows[0];
+      const estadoAsist = estadoConvocatoria === 'Confirmado' ? 'Presente' : 'Justificado';
+      const nota =
+        estadoConvocatoria === 'Confirmado'
+          ? `Asistencia confirmada por atleta/representante${observacion ? `: ${observacion}` : ''}`
+          : `No puede asistir al juego${observacion ? `: ${observacion}` : ''}`;
+      await pool.query(
+        `INSERT INTO asistencias (id_jugador, id_categoria, fecha, tipo_sesion, cuadrante, estado, observaciones, registrado_por)
+         VALUES ($1, $2, $3, 'Juego', $4, $5, $6, $7)
+         ON CONFLICT (id_jugador, fecha, tipo_sesion) DO UPDATE
+         SET estado = EXCLUDED.estado,
+             observaciones = EXCLUDED.observaciones`,
+        [Number(idJugador), m.id_categoria, m.fecha, m.cuadrante, estadoAsist, nota, idUsuario]
+      );
+    }
+  } catch {
+    // No bloquear respuesta si falla la sincronización auxiliar
+  }
+
   return rows[0] || null;
+};
+
+const upsertTrainingConfirmation = async ({
+  idTrabajo,
+  idJugador,
+  estado, // 'Confirmado' | 'No_Asiste'
+  observacion = '',
+  idUsuario = null,
+}) => {
+  const { rows } = await pool.query(
+    `INSERT INTO confirmaciones_entrenamiento (id_trabajo, id_jugador, estado, observacion, actualizado_en)
+     VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+     ON CONFLICT (id_trabajo, id_jugador) DO UPDATE
+     SET estado = EXCLUDED.estado,
+         observacion = EXCLUDED.observacion,
+         actualizado_en = CURRENT_TIMESTAMP
+     RETURNING *`,
+    [Number(idTrabajo), Number(idJugador), estado, observacion || '']
+  );
+
+  // Sincronizar con tabla asistencias (tipo_sesion = 'Entrenamiento')
+  try {
+    const drillRes = await pool.query(
+      `SELECT fecha, id_categoria, cuadrante, titulo FROM trabajos_campo WHERE id_trabajo = $1 LIMIT 1`,
+      [Number(idTrabajo)]
+    );
+    if (drillRes.rows.length > 0) {
+      const d = drillRes.rows[0];
+      const estadoAsist = estado === 'Confirmado' ? 'Presente' : 'Justificado';
+      const nota =
+        estado === 'Confirmado'
+          ? `Confirmó asistencia a entrenamiento (${d.titulo})${observacion ? `: ${observacion}` : ''}`
+          : `No puede asistir a entrenamiento (${d.titulo})${observacion ? `: ${observacion}` : ''}`;
+      await pool.query(
+        `INSERT INTO asistencias (id_jugador, id_categoria, fecha, tipo_sesion, cuadrante, estado, observaciones, registrado_por)
+         VALUES ($1, $2, $3, 'Entrenamiento', $4, $5, $6, $7)
+         ON CONFLICT (id_jugador, fecha, tipo_sesion) DO UPDATE
+         SET estado = EXCLUDED.estado,
+             observaciones = EXCLUDED.observaciones`,
+        [Number(idJugador), d.id_categoria, d.fecha, d.cuadrante || 'Cuadrante Norte - Campo', estadoAsist, nota, idUsuario]
+      );
+    }
+  } catch {
+    // No bloquear confirmación si falla la sincronización auxiliar
+  }
+
+  return rows[0] || null;
+};
+
+const updatePlayerSizes = async (idJugador, { talla_camiseta, talla_short, talla_zapatos }) => {
+  const existing = await pool.query(
+    `SELECT id_asignacion FROM uniformes_asignados WHERE id_jugador = $1 ORDER BY id_asignacion DESC LIMIT 1`,
+    [Number(idJugador)]
+  );
+
+  if (existing.rows.length > 0) {
+    const { rows } = await pool.query(
+      `UPDATE uniformes_asignados
+       SET talla_camiseta = COALESCE(NULLIF($1, ''), talla_camiseta),
+           talla_short = COALESCE(NULLIF($2, ''), talla_short),
+           talla_zapatos = COALESCE(NULLIF($3, ''), talla_zapatos)
+       WHERE id_asignacion = $4
+       RETURNING *`,
+      [
+        talla_camiseta ? String(talla_camiseta).trim() : '',
+        talla_short ? String(talla_short).trim() : '',
+        talla_zapatos ? String(talla_zapatos).trim() : '',
+        existing.rows[0].id_asignacion,
+      ]
+    );
+    return rows[0];
+  }
+
+  const { rows } = await pool.query(
+    `INSERT INTO uniformes_asignados (
+       id_jugador, temporada, talla_camiseta, talla_short, talla_zapatos,
+       kit_titular_color, kit_alternativo_color, entregado
+     )
+     VALUES ($1, '2026-2027', $2, $3, $4, 'Camiseta Vinotinto, Shorts Negros, Medias Vinotinto', 'Rojo y Blanco', FALSE)
+     RETURNING *`,
+    [
+      Number(idJugador),
+      talla_camiseta ? String(talla_camiseta).trim() : 'M',
+      talla_short ? String(talla_short).trim() : 'M',
+      talla_zapatos ? String(talla_zapatos).trim() : null,
+    ]
+  );
+  return rows[0];
 };
 
 module.exports = {
   getPlayersList,
   getPlayerById,
   getNextFixtureAndLogisticsForPlayer,
+  getUpcomingMatchesForPlayer,
   getPlayerStats,
   getEvalHistoryForPlayer,
   getAssignedDrillsForPlayer,
@@ -508,4 +680,6 @@ module.exports = {
   getNotificationsForRepresentante,
   markNotificationRead,
   updatePlayerConvocatoria,
+  upsertTrainingConfirmation,
+  updatePlayerSizes,
 };

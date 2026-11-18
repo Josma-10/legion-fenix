@@ -14,6 +14,7 @@ import {
   HeartPulse,
 } from 'lucide-react';
 import { clearSession, getStoredUser } from '../utils/auth';
+import InstallAppButton from './InstallAppButton';
 
 export default function Navbar({ subtitle = null }) {
   const router = useRouter();
@@ -151,6 +152,9 @@ export default function Navbar({ subtitle = null }) {
 
         {/* Zona derecha: Estado de Sesión / Login + Menú Móvil */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="hidden md:block">
+            <InstallAppButton compact />
+          </div>
           {user ? (
             <>
               <div className="text-right hidden sm:block">
@@ -248,7 +252,8 @@ export default function Navbar({ subtitle = null }) {
               {adminPortalLabel}
             </Link>
           )}
-          <div className="pt-2 border-t border-neutral-800">
+          <div className="pt-2 border-t border-neutral-800 space-y-2.5">
+            <InstallAppButton fullWidth />
             {user ? (
               <div className="flex items-center justify-between">
                 <div>

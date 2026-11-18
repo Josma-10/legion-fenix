@@ -147,7 +147,17 @@ exports.listUsers = async (_req, res) => {
 exports.createUser = async (req, res) => {
   const bcrypt = require('bcryptjs');
   const { validatePasswordPolicy } = require('../auth/auth.controller');
-  const { nombre, email, password, telefono, rol, documento_identidad } = req.body;
+  const {
+    nombre,
+    email,
+    password,
+    telefono,
+    rol,
+    documento_identidad,
+    talla_camiseta,
+    talla_short,
+    talla_zapatos,
+  } = req.body;
   const allowedRoles = ['ADMINISTRADOR', 'ANALISTA_ADMIN', 'ENTRENADOR', 'FISIO', 'REPRESENTANTE'];
 
   if (!nombre || !email || !password || !allowedRoles.includes(rol)) {
@@ -170,6 +180,9 @@ exports.createUser = async (req, res) => {
       telefono,
       rol,
       documento_identidad,
+      talla_camiseta,
+      talla_short,
+      talla_zapatos,
     });
     return res.status(201).json({
       message: `Usuario ${created.nombre} creado con rol ${created.rol}.`,
@@ -197,6 +210,25 @@ exports.updateUserRole = async (req, res) => {
     const updated = await adminModel.updateUserRole(idUsuario, rol);
     if (!updated) return res.status(404).json({ error: 'Usuario no encontrado.' });
     return res.json({ message: `Rol actualizado a ${updated.rol}.`, user: updated });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateUserSizes = async (req, res) => {
+  const idUsuario = Number(req.params.id);
+  const { talla_camiseta, talla_short, talla_zapatos } = req.body;
+  try {
+    const updated = await adminModel.updateUserSizes(idUsuario, {
+      talla_camiseta,
+      talla_short,
+      talla_zapatos,
+    });
+    if (!updated) return res.status(404).json({ error: 'Usuario no encontrado.' });
+    return res.json({
+      message: `Tallas de ${updated.nombre} actualizadas correctamente.`,
+      user: updated,
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

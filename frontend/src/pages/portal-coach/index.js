@@ -7,6 +7,10 @@ import {
   Box,
   Award,
   HeartPulse,
+  Shirt,
+  Save,
+  X,
+  CheckCircle2,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import MicrociclosModule from '../../modules/entrenadores/MicrociclosModule';
@@ -81,19 +85,55 @@ export default function PortalCoach() {
   });
   const [selectedCategory, setSelectedCategory] = useState('');
   const [loading, setLoading] = useState(true);
+  const [coachSizes, setCoachSizes] = useState({
+    talla_camiseta: 'M',
+    talla_short: 'M',
+    talla_zapatos: '',
+  });
+  const [sizesModalOpen, setSizesModalOpen] = useState(false);
+  const [savingSizes, setSavingSizes] = useState(false);
+  const [sizesFeedback, setSizesFeedback] = useState('');
 
   const loadDashboard = useCallback(async () => {
     try {
-      const res = await api.get('/coach/dashboard', {
-        params: selectedCategory ? { id_categoria: selectedCategory } : {},
-      });
+      const [res, meRes] = await Promise.all([
+        api.get('/coach/dashboard', {
+          params: selectedCategory ? { id_categoria: selectedCategory } : {},
+        }),
+        api.get('/auth/me').catch(() => null),
+      ]);
       setDashboard(res.data);
+      if (meRes?.data?.user) {
+        setCoachSizes({
+          talla_camiseta: meRes.data.user.talla_camiseta || 'M',
+          talla_short: meRes.data.user.talla_short || 'M',
+          talla_zapatos: meRes.data.user.talla_zapatos || '',
+        });
+      }
     } catch (err) {
       console.error('Error cargando portal entrenador:', err.message);
     } finally {
       setLoading(false);
     }
   }, [selectedCategory]);
+
+  const handleSaveCoachSizes = async (e) => {
+    e.preventDefault();
+    setSavingSizes(true);
+    setSizesFeedback('');
+    try {
+      await api.patch('/auth/profile-sizes', coachSizes);
+      setSizesFeedback('Tus tallas de camisa, shorts y zapatos han sido guardadas.');
+      setTimeout(() => {
+        setSizesModalOpen(false);
+        setSizesFeedback('');
+      }, 1200);
+    } catch (err) {
+      setSizesFeedback(err.response?.data?.error || 'Error guardando tus tallas.');
+    } finally {
+      setSavingSizes(false);
+    }
+  };
 
   useEffect(() => {
     if (!checking && user) {
@@ -137,6 +177,18 @@ export default function PortalCoach() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSizesModalOpen(true)}
+              className="px-3.5 py-2 rounded-lg bg-[#181820] hover:bg-vinotinto border border-neutral-700 hover:border-rojo-fuego text-xs font-bold text-white inline-flex items-center gap-2 transition"
+              title="Actualizar tallas de indumentaria del entrenador"
+            >
+              <Shirt className="w-4 h-4 text-amber-300" />
+              <span>
+                Mis Tallas: {coachSizes.talla_camiseta || '-'} / {coachSizes.talla_short || '-'} / Zap.{' '}
+                {coachSizes.talla_zapatos || '--'}
+              </span>
+            </button>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
@@ -256,6 +308,94 @@ export default function PortalCoach() {
           />
         )}
       </main>
+
+      {/* Modal Tallas del Entrenador */}
+      {sizesModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setSizesModalOpen(false)}
+        >
+          <form
+            onSubmit={handleSaveCoachSizes}
+            onClick={(e) => e.stopPropagation()}
+            className="card-fenix max-w-md w-full p-6 border-vinotinto space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-rojo-fuego">
+                  Información del Entrenador
+                </p>
+                <h3 className="font-display text-2xl font-bold text-white">
+                  INDUMENTARIA Y CALZADO
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSizesModalOpen(false)}
+                className="p-1.5 rounded bg-neutral-800 hover:bg-rojo-fuego text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {sizesFeedback && (
+              <div className="bg-green-950/60 border border-green-600 text-green-200 px-3 py-2 rounded-lg text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+                <span>{sizesFeedback}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">
+                  Talla de Camisa*
+                </label>
+                <select
+                  className="input-fenix text-xs"
+                  value={coachSizes.talla_camiseta}
+                  onChange={(e) => setCoachSizes({ ...coachSizes, talla_camiseta: e.target.value })}
+                >
+                  {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map((s) => (
+                    <option key={s} value={s}>Talla {s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">
+                  Talla de Shorts*
+                </label>
+                <select
+                  className="input-fenix text-xs"
+                  value={coachSizes.talla_short}
+                  onChange={(e) => setCoachSizes({ ...coachSizes, talla_short: e.target.value })}
+                >
+                  {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'].map((s) => (
+                    <option key={s} value={s}>Talla {s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">
+                  Talla de Zapatos*
+                </label>
+                <input
+                  type="text"
+                  className="input-fenix text-xs"
+                  placeholder="Ej: 42"
+                  value={coachSizes.talla_zapatos}
+                  onChange={(e) => setCoachSizes({ ...coachSizes, talla_zapatos: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <button type="submit" disabled={savingSizes} className="btn-cta w-full text-xs py-2.5">
+              <Save className="w-4 h-4" />
+              {savingSizes ? 'Guardando...' : 'Guardar Mis Tallas'}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

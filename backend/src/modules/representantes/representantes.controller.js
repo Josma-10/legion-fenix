@@ -55,9 +55,10 @@ exports.getPlayerDossier = async (req, res) => {
     }
 
     const bcvService = require('../../services/bcvService');
-    const [transactions, nextFixture, stats, evalHistory, assignedDrills, bcv] = await Promise.all([
+    const [transactions, nextFixture, upcomingMatchesRaw, stats, evalHistory, assignedDrills, bcv] = await Promise.all([
       pagosModel.getTransactions({ idJugador }),
       representantesModel.getNextFixtureAndLogisticsForPlayer(idJugador, player.id_categoria),
+      representantesModel.getUpcomingMatchesForPlayer(idJugador, player.id_categoria),
       representantesModel.getPlayerStats(idJugador),
       representantesModel.getEvalHistoryForPlayer(idJugador),
       representantesModel.getAssignedDrillsForPlayer(idJugador, player.id_categoria),
@@ -75,15 +76,16 @@ exports.getPlayerDossier = async (req, res) => {
         : player;
 
     const notificationService = require('../../services/notificationService');
-    const enrichedNextFixture = nextFixture
-      ? {
-          ...nextFixture,
-          uniforme_img: notificationService.getUniformImgForMatch(
-            nextFixture,
-            player.posicion_habitual
-          ),
-        }
-      : null;
+    const enrichMatch = (m) =>
+      m
+        ? {
+            ...m,
+            uniforme_img: notificationService.getUniformImgForMatch(m, player.posicion_habitual),
+          }
+        : null;
+
+    const enrichedNextFixture = enrichMatch(nextFixture);
+    const upcomingMatches = (upcomingMatchesRaw || []).map(enrichMatch);
 
     const bloqueoConvocatoria = player.estado_cuenta === 'Moroso';
 
@@ -91,6 +93,7 @@ exports.getPlayerDossier = async (req, res) => {
       player: safePlayer,
       transactions,
       nextFixture: enrichedNextFixture,
+      upcomingMatches,
       stats,
       evalHistory,
       assignedDrills,
@@ -213,12 +216,29 @@ exports.markInboxNotificationRead = async (req, res) => {
   }
 };
 
+async function resolveUserRepresentanteId(req) {
+  if (req.user.id_representante) return req.user.id_representante;
+  const pool = require('../../config/db');
+  const { rows } = await pool.query(
+    'SELECT id_representante FROM representantes WHERE id_usuario = $1 LIMIT 1',
+    [req.user.id]
+  );
+  return rows[0]?.id_representante || null;
+}
+
 exports.respondConvocation = async (req, res) => {
   const idJugador = Number(req.params.id);
   const idPartido = Number(req.params.idPartido);
-  const { estado_convocatoria, observacion } = req.body;
+  const rawEstado = req.body.estado_convocatoria || req.body.estado;
+  const { observacion } = req.body;
 
-  if (!['Confirmado', 'Descartado'].includes(estado_convocatoria)) {
+  // Normalizar posibles valores desde la interfaz
+  const normalizedEstado =
+    rawEstado === 'No_Asiste' || rawEstado === 'No Puedo Asistir'
+      ? 'Descartado'
+      : rawEstado;
+
+  if (!['Confirmado', 'Descartado'].includes(normalizedEstado)) {
     return res.status(400).json({
       error: 'Estado de respuesta inválido. Usa Confirmado o Descartado.',
     });
@@ -227,13 +247,13 @@ exports.respondConvocation = async (req, res) => {
   try {
     const player = await representantesModel.getPlayerById(idJugador);
     if (!player) return res.status(404).json({ error: 'Atleta no encontrado.' });
-    if (
-      (req.user.rol === 'REPRESENTANTE' || req.user.rol === 'ATLETA') &&
-      player.id_representante !== req.user.id_representante
-    ) {
-      return res.status(403).json({ error: 'No autorizado para confirmar asistencia de este atleta.' });
+    if (req.user.rol === 'REPRESENTANTE' || req.user.rol === 'ATLETA') {
+      const userRepId = await resolveUserRepresentanteId(req);
+      if (player.id_representante !== userRepId) {
+        return res.status(403).json({ error: 'No autorizado para confirmar asistencia de este atleta.' });
+      }
     }
-    if (estado_convocatoria === 'Confirmado' && player.estado_cuenta === 'Moroso') {
+    if (normalizedEstado === 'Confirmado' && player.estado_cuenta === 'Moroso') {
       return res.status(403).json({
         error: 'Atleta con bloqueo administrativo por morosidad. Regulariza tus pagos para confirmar asistencia al partido.',
       });
@@ -242,15 +262,95 @@ exports.respondConvocation = async (req, res) => {
     const convocatoria = await representantesModel.updatePlayerConvocatoria({
       idPartido,
       idJugador,
-      estadoConvocatoria: estado_convocatoria,
+      estadoConvocatoria: normalizedEstado,
       observacion,
+      idUsuario: req.user.id,
     });
     return res.json({
       message:
-        estado_convocatoria === 'Confirmado'
+        normalizedEstado === 'Confirmado'
           ? 'Asistencia al juego confirmada exitosamente.'
-          : 'Se notificó inasistencia / descarte para este partido.',
+          : 'Se registró que no podrás asistir a este partido.',
       convocatoria,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.respondTrainingAttendance = async (req, res) => {
+  const idJugador = Number(req.params.id);
+  const idTrabajo = Number(req.params.idTrabajo);
+  const rawEstado = req.body.estado || req.body.estado_asistencia;
+  const { observacion } = req.body;
+
+  const normalizedEstado =
+    rawEstado === 'Descartado' || rawEstado === 'No Puedo Asistir' || rawEstado === 'No_Asiste'
+      ? 'No_Asiste'
+      : rawEstado === 'Confirmado'
+      ? 'Confirmado'
+      : null;
+
+  if (!normalizedEstado) {
+    return res.status(400).json({
+      error: 'Estado inválido para entrenamiento. Usa Confirmado o No_Asiste.',
+    });
+  }
+
+  try {
+    const player = await representantesModel.getPlayerById(idJugador);
+    if (!player) return res.status(404).json({ error: 'Atleta no encontrado.' });
+    if (req.user.rol === 'REPRESENTANTE' || req.user.rol === 'ATLETA') {
+      const userRepId = await resolveUserRepresentanteId(req);
+      if (player.id_representante !== userRepId) {
+        return res.status(403).json({ error: 'No autorizado para confirmar asistencia de este atleta.' });
+      }
+    }
+
+    const confirmacion = await representantesModel.upsertTrainingConfirmation({
+      idTrabajo,
+      idJugador,
+      estado: normalizedEstado,
+      observacion: observacion || '',
+      idUsuario: req.user.id,
+    });
+
+    return res.json({
+      message:
+        normalizedEstado === 'Confirmado'
+          ? 'Asistencia al entrenamiento confirmada exitosamente.'
+          : 'Se notificó al cuerpo técnico que no podrás asistir a este entrenamiento.',
+      confirmacion,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updatePlayerSizes = async (req, res) => {
+  const idJugador = Number(req.params.id);
+  const { talla_camiseta, talla_short, talla_zapatos } = req.body;
+
+  try {
+    const player = await representantesModel.getPlayerById(idJugador);
+    if (!player) return res.status(404).json({ error: 'Atleta no encontrado.' });
+
+    if (req.user.rol === 'REPRESENTANTE' || req.user.rol === 'ATLETA') {
+      const userRepId = await resolveUserRepresentanteId(req);
+      if (player.id_representante !== userRepId) {
+        return res.status(403).json({ error: 'No autorizado para editar tallas de este atleta.' });
+      }
+    }
+
+    const updated = await representantesModel.updatePlayerSizes(idJugador, {
+      talla_camiseta,
+      talla_short,
+      talla_zapatos,
+    });
+
+    return res.json({
+      message: 'Tallas de camisa, short y zapatos del jugador actualizadas correctamente.',
+      uniforme: updated,
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
