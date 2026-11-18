@@ -227,36 +227,36 @@ export default function HeroSliderModule({ nextMatch = null, slides = [], loadin
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-5 flex items-center justify-between relative z-10">
-          <div className="flex items-center gap-2">
-            {allSlides.map((s, idx) => (
-              <button
-                key={s.id}
-                onClick={() => setSlideIdx(idx)}
-                aria-label={`Ir al slide ${idx + 1}`}
-                className={`h-2 rounded-full transition-all ${
-                  idx === slideIdx ? 'w-8 bg-rojo-fuego' : 'w-2.5 bg-neutral-600 hover:bg-neutral-400'
-                }`}
-              />
-            ))}
-          </div>
+        {/* Flecha IZQUIERDA - posicionada al lado izquierdo del slide */}
+        <button
+          onClick={() => setSlideIdx((prev) => (prev - 1 + allSlides.length) % allSlides.length)}
+          aria-label="Slide anterior"
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-black/60 hover:bg-vinotinto border border-neutral-700 text-white transition shadow-lg"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
 
-          <div className="flex items-center gap-2">
+        {/* Flecha DERECHA - posicionada al lado derecho del slide */}
+        <button
+          onClick={() => setSlideIdx((prev) => (prev + 1) % allSlides.length)}
+          aria-label="Slide siguiente"
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-black/60 hover:bg-vinotinto border border-neutral-700 text-white transition shadow-lg"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        {/* Puntos de navegación - centrados en la parte inferior */}
+        <div className="pb-5 flex items-center justify-center gap-2 relative z-10">
+          {allSlides.map((s, idx) => (
             <button
-              onClick={() => setSlideIdx((prev) => (prev - 1 + allSlides.length) % allSlides.length)}
-              aria-label="Slide anterior"
-              className="p-2 rounded-full bg-black/50 hover:bg-vinotinto border border-neutral-700 text-white transition"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setSlideIdx((prev) => (prev + 1) % allSlides.length)}
-              aria-label="Slide siguiente"
-              className="p-2 rounded-full bg-black/50 hover:bg-vinotinto border border-neutral-700 text-white transition"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+              key={s.id}
+              onClick={() => setSlideIdx(idx)}
+              aria-label={`Ir al slide ${idx + 1}`}
+              className={`h-2 rounded-full transition-all ${
+                idx === slideIdx ? 'w-8 bg-rojo-fuego' : 'w-2.5 bg-neutral-600 hover:bg-neutral-400'
+              }`}
+            />
+          ))}
         </div>
       </div>
     </section>
