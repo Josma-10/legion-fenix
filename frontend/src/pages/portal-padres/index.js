@@ -185,63 +185,94 @@ export default function PortalPadres() {
           </div>
         )}
 
-        {/* Submódulos del Portal */}
-        <div className="flex flex-wrap gap-2 border-b border-neutral-800 pb-3">
-          <button
-            onClick={() => setActiveTab('info')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-              activeTab === 'info' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-            }`}
-          >
-            <Award className="w-4 h-4" /> Información del Jugador
-          </button>
-          <button
-            onClick={() => setActiveTab('bandeja')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-              activeTab === 'bandeja' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-            }`}
-          >
-            <Inbox className="w-4 h-4" /> Bandeja de Entrada
-            {unreadCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-rojo-fuego text-white text-[10px] font-extrabold">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('pagos')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-              activeTab === 'pagos' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-            }`}
-          >
-            <Wallet className="w-4 h-4" /> Pagos, QR y Semáforo
-          </button>
-          <button
-            onClick={() => setActiveTab('logistica')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-              activeTab === 'logistica' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-            }`}
-          >
-            <Shirt className="w-4 h-4" /> Indumentaria y GPS
-          </button>
-          <button
-            onClick={() => setActiveTab('medica')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-              activeTab === 'medica' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-            }`}
-          >
-            <HeartPulse className="w-4 h-4" /> Ficha Médica y Podología
-          </button>
-          {user?.rol !== 'ATLETA' && (
+        {/* Barra de Navegación Modular estilo Gesdep Connect */}
+        <div className="border-b border-neutral-800 pb-3">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
             <button
-              onClick={() => setActiveTab('registro')}
-              className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-                activeTab === 'registro' ? 'bg-rojo-fuego text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
+              type="button"
+              onClick={() => setActiveTab('info')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'info'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
               }`}
             >
-              <UserPlus className="w-4 h-4" /> Inscribir Atleta (5 Etapas)
+              <Award className={`w-4 h-4 shrink-0 ${activeTab === 'info' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Ficha e Info Deportiva</span>
             </button>
-          )}
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('bandeja')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'bandeja'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+              }`}
+            >
+              <Inbox className={`w-4 h-4 shrink-0 ${activeTab === 'bandeja' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Bandeja de Avisos</span>
+              {unreadCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-rojo-fuego text-white text-[10px] font-extrabold shadow">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('pagos')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'pagos'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+              }`}
+            >
+              <Wallet className={`w-4 h-4 shrink-0 ${activeTab === 'pagos' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Pagos, QR y Semáforo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('logistica')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'logistica'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+              }`}
+            >
+              <Shirt className={`w-4 h-4 shrink-0 ${activeTab === 'logistica' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Indumentaria y GPS</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('medica')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'medica'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+              }`}
+            >
+              <HeartPulse className={`w-4 h-4 shrink-0 ${activeTab === 'medica' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Ficha Médica y Podología</span>
+            </button>
+
+            {user?.rol !== 'ATLETA' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('registro')}
+                className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                  activeTab === 'registro'
+                    ? 'bg-rojo-fuego border-red-500 text-white shadow-fuego font-bold'
+                    : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-rojo-fuego/60 font-semibold'
+                }`}
+              >
+                <UserPlus className="w-4 h-4 shrink-0 text-amber-300" />
+                <span className="text-xs whitespace-nowrap">Inscribir Nuevo Atleta</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {activeTab === 'info' && activePlayer && (

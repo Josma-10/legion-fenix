@@ -156,31 +156,40 @@ export default function PortalCoach() {
     ? dashboard.players.filter((p) => String(p.id_categoria) === String(selectedCategory))
     : dashboard.players;
   const groupedCategories = groupCategoriesByDiscipline(dashboard.categories || []);
+  const aptosCount = filteredPlayers.filter((p) => p.estado_cuenta !== 'Moroso' && !p.en_enfermeria).length;
+  const lesionadosCount = filteredPlayers.filter((p) => p.en_enfermeria || p.estado_clinico === 'Lesionado').length;
+  const nextMatch = dashboard.upcomingMatches?.[0] || null;
 
   return (
     <div className="min-h-screen bg-negro-fondo text-white flex flex-col">
-      <Navbar subtitle="Portal de Entrenadores y Metodología" />
+      <Navbar subtitle="Portal de Entrenadores y Metodología • Gesdep Hub" />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6 w-full flex-1">
-        {/* Cabecera + Filtro Global de Categoría */}
-        <div className="card-fenix p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-l-rojo-fuego">
-          <div>
-            <span className="text-xs font-extrabold uppercase tracking-widest text-rojo-fuego">
-              Cuerpo Técnico Legión Fénix • {user?.nombre}
-            </span>
-            <h1 className="font-display text-3xl font-extrabold text-white">
-              DIRECCIÓN TÉCNICA Y METODOLOGÍA
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 w-full flex-1">
+        {/* Cabecera Principal Institucional */}
+        <div className="card-fenix p-5 border-l-4 border-l-rojo-fuego flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rojo-fuego/20 border border-rojo-fuego/60 text-rojo-fuego text-[10px] sm:text-xs font-extrabold uppercase tracking-wider">
+                <Users className="w-3.5 h-3.5" /> Dirección Técnica • {user?.nombre}
+              </span>
+              <span className="hidden sm:inline-block text-neutral-500">•</span>
+              <span className="text-xs text-neutral-400 font-semibold">
+                Legión Fénix FC (Metodología de Alto Rendimiento)
+              </span>
+            </div>
+            <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-wide">
+              PANEL TÉCNICO Y METODOLOGÍA
             </h1>
-            <p className="text-xs text-texto-secundario mt-1">
-              Módulo estructurado por submódulos: microciclos, trabajos de cancha por horario y espacio, tabla de juego 2D, evaluación manual, asistencia y enlace clínico.
+            <p className="text-xs text-texto-secundario max-w-2xl">
+              Sistema integral de planificación, pizarras 2D interactivas, baremos físicos-técnicos y convocatorias oficiales por categoría y disciplina.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               type="button"
               onClick={() => setSizesModalOpen(true)}
-              className="px-3.5 py-2 rounded-lg bg-[#181820] hover:bg-vinotinto border border-neutral-700 hover:border-rojo-fuego text-xs font-bold text-white inline-flex items-center gap-2 transition"
+              className="px-3 py-2 rounded-lg bg-[#181820] hover:bg-vinotinto border border-neutral-700 hover:border-rojo-fuego text-xs font-bold text-white inline-flex items-center gap-2 transition shadow-sm"
               title="Actualizar tallas de indumentaria del entrenador"
             >
               <Shirt className="w-4 h-4 text-amber-300" />
@@ -192,7 +201,7 @@ export default function PortalCoach() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="input-fenix w-auto min-w-[230px]"
+              className="input-fenix w-auto min-w-[210px] text-xs font-semibold"
             >
               <option value="">Todas las Categorías</option>
               {groupedCategories.map((group) => (
@@ -208,30 +217,132 @@ export default function PortalCoach() {
           </div>
         </div>
 
-        {/* Grid de Submódulos Organizados */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-          {SUBMODULES.map((sub) => {
-            const Icon = sub.icon;
-            const active = activeTab === sub.key;
-            return (
-              <button
-                key={sub.key}
-                type="button"
-                onClick={() => setActiveTab(sub.key)}
-                className={`p-3 rounded-xl border text-left transition flex flex-col justify-between gap-1.5 ${
-                  active
-                    ? 'bg-vinotinto border-rojo-fuego text-white shadow-fenix'
-                    : 'bg-gris-tarjeta border-neutral-800 text-texto-secundario hover:text-white hover:border-vinotinto/60'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-rojo-fuego'}`} />
-                <div>
-                  <p className="text-xs font-extrabold leading-tight">{sub.label}</p>
-                  <p className="text-[10px] opacity-75 truncate mt-0.5">{sub.desc}</p>
-                </div>
-              </button>
-            );
-          })}
+        {/* Top Command Bar estilo Gesdep 4.0: Resumen Ejecutivo de Mando Deportivo */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div
+            onClick={() => setActiveTab('plantilla')}
+            className="cursor-pointer card-fenix p-3.5 border-l-4 border-l-cyan-500 hover:border-cyan-400 transition hover:-translate-y-0.5"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">
+                Plantilla Total
+              </span>
+              <Users className="w-4 h-4 text-cyan-400" />
+            </div>
+            <p className="font-display text-2xl sm:text-3xl font-extrabold text-white mt-1">
+              {filteredPlayers.length}
+            </p>
+            <p className="text-[10px] text-neutral-400 truncate">
+              {selectedCategory ? 'En categoría activa' : 'En todas las categorías'}
+            </p>
+          </div>
+
+          <div
+            onClick={() => setActiveTab('plantilla')}
+            className="cursor-pointer card-fenix p-3.5 border-l-4 border-l-emerald-500 hover:border-emerald-400 transition hover:-translate-y-0.5"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">
+                Aptos Convocatoria
+              </span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            </div>
+            <p className="font-display text-2xl sm:text-3xl font-extrabold text-emerald-300 mt-1">
+              {aptosCount}
+            </p>
+            <p className="text-[10px] text-neutral-400 truncate">Al día y sin lesiones</p>
+          </div>
+
+          <div
+            onClick={() => setActiveTab('lesiones')}
+            className="cursor-pointer card-fenix p-3.5 border-l-4 border-l-amber-500 hover:border-amber-400 transition hover:-translate-y-0.5"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">
+                En Enfermería
+              </span>
+              <HeartPulse className="w-4 h-4 text-amber-400" />
+            </div>
+            <p className="font-display text-2xl sm:text-3xl font-extrabold text-amber-300 mt-1">
+              {lesionadosCount}
+            </p>
+            <p className="text-[10px] text-neutral-400 truncate">Seguimiento fisioterapéutico</p>
+          </div>
+
+          <div className="card-fenix p-3.5 border-l-4 border-l-rojo-fuego">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-rojo-fuego">
+                Próximo Compromiso
+              </span>
+              <Award className="w-4 h-4 text-rojo-fuego" />
+            </div>
+            {nextMatch ? (
+              <div className="mt-1">
+                <p className="text-sm font-bold text-white truncate">
+                  vs {nextMatch.rival}
+                </p>
+                <p className="text-[10px] text-neutral-400 truncate">
+                  {new Date(nextMatch.fecha_hora).toLocaleDateString('es-VE', {
+                    day: 'numeric',
+                    month: 'short',
+                  })} • {nextMatch.categoria_nombre || nextMatch.modalidad}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-500 mt-1">Sin partidos programados</p>
+            )}
+          </div>
+        </div>
+
+        {/* Barra de Navegación Modular estilo Gesdep 4.0 */}
+        <div className="border-b border-neutral-800 pb-3">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+            {SUBMODULES.map((sub) => {
+              const Icon = sub.icon;
+              const active = activeTab === sub.key;
+
+              // Conteos dinámicos en badges
+              let badgeCount = null;
+              if (sub.key === 'microciclos') badgeCount = dashboard.microciclos?.length || null;
+              if (sub.key === 'trabajos3d') badgeCount = dashboard.trabajos?.length || null;
+              if (sub.key === 'simulador') badgeCount = dashboard.tacticas?.length || null;
+              if (sub.key === 'evaluacion') badgeCount = dashboard.evaluaciones?.length || null;
+              if (sub.key === 'lesiones') badgeCount = lesionadosCount > 0 ? lesionadosCount : null;
+              if (sub.key === 'plantilla') badgeCount = filteredPlayers.length || null;
+              if (sub.key === 'videos') badgeCount = dashboard.videos?.length || null;
+
+              return (
+                <button
+                  key={sub.key}
+                  type="button"
+                  onClick={() => setActiveTab(sub.key)}
+                  className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2.5 ${
+                    active
+                      ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                      : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+                  <div className="text-left">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs whitespace-nowrap">{sub.label}</span>
+                      {badgeCount !== null && (
+                        <span
+                          className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                            active
+                              ? 'bg-rojo-fuego text-white'
+                              : 'bg-neutral-800 text-neutral-300 border border-neutral-700'
+                          }`}
+                        >
+                          {badgeCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {activeTab === 'microciclos' && (

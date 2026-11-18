@@ -180,69 +180,104 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* Submódulos del Panel */}
-        <div className="flex flex-wrap gap-2 border-b border-neutral-800 pb-3">
-          <button
-            onClick={() => setActiveTab('asistencia')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-              activeTab === 'asistencia' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-            }`}
-          >
-            <UserCheck className="w-4 h-4" /> Asistencia Check-In/Out
-          </button>
-          <button
-            onClick={() => setActiveTab('finanzas')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-              activeTab === 'finanzas' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" /> Contabilidad y Equilibrio
-          </button>
-          <button
-            onClick={() => setActiveTab('cobranzas')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-              activeTab === 'cobranzas' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-            }`}
-          >
-            <Receipt className="w-4 h-4" /> Comprobantes y Tienda
-          </button>
-          <button
-            onClick={() => setActiveTab('carrusel')}
-            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-              activeTab === 'carrusel' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-            }`}
-          >
-            <Film className="w-4 h-4" /> Carrusel Principal
-          </button>
+        {/* Barra de Navegación Modular estilo Gesdep 4.0 */}
+        <div className="border-b border-neutral-800 pb-3">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('asistencia')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'asistencia'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+              }`}
+            >
+              <UserCheck className={`w-4 h-4 shrink-0 ${activeTab === 'asistencia' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Asistencia Check-In/Out</span>
+            </button>
 
-          {isAdmin && (
-            <>
-              <button
-                onClick={() => setActiveTab('clinica')}
-                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-                  activeTab === 'clinica' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-                }`}
-              >
-                <HeartPulse className="w-4 h-4" /> Clínica y Lesiones
-              </button>
-              <button
-                onClick={() => setActiveTab('usuarios')}
-                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-                  activeTab === 'usuarios' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-                }`}
-              >
-                <Users className="w-4 h-4" /> Usuarios y Permisos
-              </button>
-              <button
-                onClick={() => setActiveTab('mensajeria')}
-                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold inline-flex items-center gap-2 transition ${
-                  activeTab === 'mensajeria' ? 'bg-vinotinto text-white' : 'bg-gris-tarjeta text-texto-secundario hover:text-white'
-                }`}
-              >
-                <QrCode className="w-4 h-4" /> Mensajería QR y Gmail
-              </button>
-            </>
-          )}
+            <button
+              type="button"
+              onClick={() => setActiveTab('finanzas')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'finanzas'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+              }`}
+            >
+              <TrendingUp className={`w-4 h-4 shrink-0 ${activeTab === 'finanzas' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Contabilidad y Equilibrio</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('cobranzas')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'cobranzas'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+              }`}
+            >
+              <Receipt className={`w-4 h-4 shrink-0 ${activeTab === 'cobranzas' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Comprobantes y Tienda</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('carrusel')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'carrusel'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+              }`}
+            >
+              <Film className={`w-4 h-4 shrink-0 ${activeTab === 'carrusel' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Carrusel Principal</span>
+            </button>
+
+            {isAdmin && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('clinica')}
+                  className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                    activeTab === 'clinica'
+                      ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                      : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+                  }`}
+                >
+                  <HeartPulse className={`w-4 h-4 shrink-0 ${activeTab === 'clinica' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+                  <span className="text-xs whitespace-nowrap">Clínica y Lesiones</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('usuarios')}
+                  className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                    activeTab === 'usuarios'
+                      ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                      : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+                  }`}
+                >
+                  <Users className={`w-4 h-4 shrink-0 ${activeTab === 'usuarios' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+                  <span className="text-xs whitespace-nowrap">Usuarios y Permisos</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('mensajeria')}
+                  className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                    activeTab === 'mensajeria'
+                      ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                      : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+                  }`}
+                >
+                  <QrCode className={`w-4 h-4 shrink-0 ${activeTab === 'mensajeria' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+                  <span className="text-xs whitespace-nowrap">Mensajería QR y Gmail</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {activeTab === 'asistencia' && (

@@ -53,6 +53,15 @@ img, video {
   background: #7A001E;
 }
 
+/* Ocultar barra de desplazamiento en contenedores deslizables horizontales */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 @layer components {
   .card-fenix {
     @apply bg-gris-tarjeta border border-neutral-800 rounded-xl shadow-lg;
