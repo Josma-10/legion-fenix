@@ -292,11 +292,11 @@ export default function RegisterRepresentanteForm({
 
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Cédula / DNI* (Máx. 20 números)
+              Cédula / DNI*
             </label>
-            <div className="flex gap-1.5">
+            <div className="flex w-full bg-[#151515] border border-neutral-700 focus-within:border-rojo-fuego focus-within:ring-1 focus-within:ring-rojo-fuego rounded-lg overflow-hidden transition">
               <select
-                className="input-fenix w-28 shrink-0 text-xs font-bold"
+                className="bg-neutral-800 text-white font-bold text-sm px-3 py-2.5 outline-none border-r border-neutral-700 cursor-pointer shrink-0"
                 value={form.rep_doc_tipo || 'V'}
                 onChange={(e) => {
                   const tipo = e.target.value;
@@ -304,18 +304,18 @@ export default function RegisterRepresentanteForm({
                   setForm({
                     ...form,
                     rep_doc_tipo: tipo,
-                    rep_dni: num ? `${tipo}-${num}` : '',
+                    rep_dni: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
                   });
                 }}
               >
-                <option value="V">V- (Ven.)</option>
-                <option value="E">E- (Ext.)</option>
-                <option value="PN">PN: (Partida)</option>
+                <option value="V">V</option>
+                <option value="E">E</option>
+                <option value="PN">PN</option>
               </select>
               <input
                 type="text"
-                className="input-fenix flex-1 min-w-0 text-xs font-mono font-bold"
-                placeholder={form.rep_doc_tipo === 'E' ? '84123456' : '18234567'}
+                className="w-full bg-transparent px-3 py-2 text-sm text-white font-mono font-bold outline-none placeholder-neutral-500 min-w-0"
+                placeholder={form.rep_doc_tipo === 'E' ? '84123456' : form.rep_doc_tipo === 'PN' ? '12345678' : '18234567'}
                 maxLength={20}
                 value={form.rep_doc_num || ''}
                 onChange={(e) => {
@@ -324,7 +324,7 @@ export default function RegisterRepresentanteForm({
                   setForm({
                     ...form,
                     rep_doc_num: num,
-                    rep_dni: num ? `${tipo}-${num}` : '',
+                    rep_dni: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
                   });
                 }}
                 required
@@ -351,7 +351,7 @@ export default function RegisterRepresentanteForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Teléfono de Contacto WhatsApp* (Máx. 11 dígitos)
+              Teléfono de Contacto WhatsApp*
             </label>
             <input
               type="tel"
@@ -370,7 +370,7 @@ export default function RegisterRepresentanteForm({
           </div>
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Dirección de Residencia (Máx. 100 caracteres)
+              Dirección de Residencia
             </label>
             <input
               type="text"
@@ -389,7 +389,7 @@ export default function RegisterRepresentanteForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-neutral-800/80">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Correo Electrónico (Usuario)* (Máx. 50 caracteres)
+              Correo Electrónico (Usuario)*
             </label>
             <input
               type="email"
@@ -405,7 +405,7 @@ export default function RegisterRepresentanteForm({
           </div>
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Contraseña de Acceso* (8 a 20 caracteres, sin espacios)
+              Contraseña de Acceso*
             </label>
             <input
               type="password"
@@ -461,11 +461,11 @@ export default function RegisterRepresentanteForm({
 
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Cédula / Partida Nac.* (Máx. 20 números)
+              Cédula / Partida de Nacimiento*
             </label>
-            <div className="flex gap-1.5">
+            <div className="flex w-full bg-[#151515] border border-neutral-700 focus-within:border-rojo-fuego focus-within:ring-1 focus-within:ring-rojo-fuego rounded-lg overflow-hidden transition">
               <select
-                className="input-fenix w-28 shrink-0 text-xs font-bold"
+                className="bg-neutral-800 text-white font-bold text-sm px-3 py-2.5 outline-none border-r border-neutral-700 cursor-pointer shrink-0"
                 value={form.atleta_doc_tipo || 'V'}
                 onChange={(e) => {
                   const tipo = e.target.value;
@@ -477,13 +477,13 @@ export default function RegisterRepresentanteForm({
                   });
                 }}
               >
-                <option value="V">V- (Ven.)</option>
-                <option value="E">E- (Ext.)</option>
-                <option value="PN">PN: (Partida)</option>
+                <option value="V">V</option>
+                <option value="E">E</option>
+                <option value="PN">PN</option>
               </select>
               <input
                 type="text"
-                className="input-fenix flex-1 min-w-0 text-xs font-mono font-bold"
+                className="w-full bg-transparent px-3 py-2 text-sm text-white font-mono font-bold outline-none placeholder-neutral-500 min-w-0"
                 placeholder={
                   form.atleta_doc_tipo === 'PN'
                     ? 'Nº Acta Partida'
@@ -526,7 +526,7 @@ export default function RegisterRepresentanteForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Fecha de Nacimiento del Menor* (Año de 4 dígitos)
+              Fecha de Nacimiento del Menor*
             </label>
             <input
               type="date"
@@ -698,7 +698,7 @@ export default function RegisterRepresentanteForm({
 
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Talla Zapatos* (2 dígitos)
+              Talla Zapatos*
             </label>
             <input
               type="text"
@@ -784,7 +784,7 @@ export default function RegisterRepresentanteForm({
 
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Referencia Bancaria (Últimos 8 dígitos)*
+              Referencia Bancaria*
             </label>
             <input
               type="text"
@@ -804,7 +804,7 @@ export default function RegisterRepresentanteForm({
 
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Teléfono del Pago Móvil* (Máx. 11 dígitos)
+              Teléfono del Pago Móvil*
             </label>
             <input
               type="tel"

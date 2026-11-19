@@ -308,7 +308,7 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">Teléfono Principal (Máx. 11 dígitos)</label>
+              <label className="block text-xs font-semibold text-texto-secundario mb-1">Teléfono Principal</label>
               <input
                 type="tel"
                 className="input-fenix font-mono font-bold"
@@ -324,7 +324,7 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">Teléfono de Emergencia* (Máx. 11 dígitos)</label>
+              <label className="block text-xs font-semibold text-texto-secundario mb-1">Teléfono de Emergencia*</label>
               <input
                 type="tel"
                 className="input-fenix font-mono font-bold"
@@ -341,7 +341,7 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">Dirección de Habitación (Máx. 100 car.)</label>
+              <label className="block text-xs font-semibold text-texto-secundario mb-1">Dirección de Habitación</label>
               <input
                 type="text"
                 className="input-fenix"
@@ -412,10 +412,10 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-texto-secundario mb-1">DNI / Cédula / Partida* (Máx. 20 números)</label>
-                <div className="flex gap-1.5">
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">DNI / Cédula / Partida*</label>
+                <div className="flex w-full bg-[#151515] border border-neutral-700 focus-within:border-rojo-fuego focus-within:ring-1 focus-within:ring-rojo-fuego rounded-lg overflow-hidden transition">
                   <select
-                    className="input-fenix w-28 shrink-0 text-xs font-bold"
+                    className="bg-neutral-800 text-white font-bold text-sm px-3 py-2.5 outline-none border-r border-neutral-700 cursor-pointer shrink-0"
                     value={jugadorData.doc_tipo || 'V'}
                     onChange={(e) => {
                       const tipo = e.target.value;
@@ -427,13 +427,13 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                       });
                     }}
                   >
-                    <option value="V">V- (Ven.)</option>
-                    <option value="E">E- (Ext.)</option>
-                    <option value="PN">PN: (Partida)</option>
+                    <option value="V">V</option>
+                    <option value="E">E</option>
+                    <option value="PN">PN</option>
                   </select>
                   <input
                     type="text"
-                    className="input-fenix flex-1 min-w-0 text-xs font-mono font-bold"
+                    className="w-full bg-transparent px-3 py-2 text-sm text-white font-mono font-bold outline-none placeholder-neutral-500 min-w-0"
                     maxLength={20}
                     value={jugadorData.doc_num || ''}
                     onChange={(e) => {
@@ -461,7 +461,7 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                 )}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-texto-secundario mb-1">Fecha de Nacimiento* (Año de 4 dígitos)</label>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">Fecha de Nacimiento*</label>
                 <input
                   type="date"
                   className="input-fenix"
@@ -708,7 +708,7 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-texto-secundario mb-1">Talla de Zapatos* (2 dígitos)</label>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">Talla de Zapatos*</label>
                 <input
                   type="text"
                   className="input-fenix font-mono font-bold"
