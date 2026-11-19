@@ -264,7 +264,7 @@ export default function PortalPadres() {
 
         {/* Barra de Navegación Modular estilo Gesdep Connect */}
         <div className="border-b border-neutral-800 pb-3">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="flex flex-wrap items-center gap-2 py-1">
             <button
               type="button"
               onClick={() => setActiveTab('info')}

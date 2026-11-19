@@ -20,11 +20,13 @@ export default function RegisterAdultoForm({
   const [loading, setLoading] = useState(false);
   const [adultForm, setAdultForm] = useState({
     nombre_completo: '',
+    doc_tipo: 'V', // 'V' | 'E' | 'PN'
+    doc_num: '',
     dni_cedula: '',
     genero: 'Masculino',
     fecha_nacimiento: '',
-    estatura: '',
-    peso: '',
+    estatura: '1.75',
+    peso: '70',
     talla_camiseta: 'M',
     talla_short: 'M',
     talla_zapatos: '41',
@@ -68,11 +70,44 @@ export default function RegisterAdultoForm({
     e.preventDefault();
     if (onError) onError('');
 
+    // QA 1: Nombre (solo letras y espacios, sin comas, asteriscos, números)
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+    if (!adultForm.nombre_completo.trim() || !nameRegex.test(adultForm.nombre_completo.trim())) {
+      if (onError) onError('Tu nombre completo solo debe contener letras y espacios (sin números ni caracteres especiales).');
+      return;
+    }
+
+    // QA 2: Cédula / DNI del Atleta Mayor (máx. 20 números)
+    const docTipo = adultForm.doc_tipo || 'V';
+    const docNum = (adultForm.doc_num || '').trim().replace(/\D/g, '').slice(0, 20);
+    const docFinal = docNum ? (docTipo === 'PN' ? `PN:${docNum}` : `${docTipo}-${docNum}`) : adultForm.dni_cedula.trim();
+    if (!docFinal) {
+      if (onError) onError('Debes ingresar tu Cédula / DNI (solo números, máx. 20 dígitos).');
+      return;
+    }
+
+    // QA 3: Teléfono (máximo 11 dígitos numéricos)
+    const cleanPhone = adultForm.telefono.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length > 11) {
+      if (onError) onError('El teléfono de contacto debe ser numérico con un máximo de 11 dígitos (Ej: 04121234567).');
+      return;
+    }
+
+    // QA 4: Correo (máximo 50 caracteres)
+    if (adultForm.email.length > 50) {
+      if (onError) onError('El correo electrónico no puede exceder 50 caracteres.');
+      return;
+    }
     if (/\s/.test(adultForm.email) || /\s/.test(adultForm.password)) {
       if (onError) onError('No se permiten espacios en blanco en el correo ni en la contraseña.');
       return;
     }
 
+    // QA 5: Contraseña (máximo 20 caracteres)
+    if (adultForm.password.length > 20) {
+      if (onError) onError('La contraseña no puede exceder 20 caracteres.');
+      return;
+    }
     if (!passwordCheck.isValid) {
       if (onError) {
         onError(
@@ -82,6 +117,7 @@ export default function RegisterAdultoForm({
       return;
     }
 
+    // QA 6: Fecha de nacimiento y edad
     if (computedAge === null) {
       if (onError) onError('Selecciona tu fecha de nacimiento para calcular tu edad y categoría.');
       return;
@@ -94,6 +130,21 @@ export default function RegisterAdultoForm({
       }
       return;
     }
+
+    // QA 7: Talla de zapatos (solo 2 caracteres numéricos)
+    const cleanZapatos = adultForm.talla_zapatos.replace(/\D/g, '');
+    if (!cleanZapatos || cleanZapatos.length > 2) {
+      if (onError) onError('La talla de zapatos debe contener únicamente hasta 2 dígitos numéricos (Ej: 41).');
+      return;
+    }
+
+    // QA 8: Referencia bancaria (máximo 8 dígitos numéricos)
+    const cleanRef = adultForm.referencia_bancaria.replace(/\D/g, '');
+    if (!cleanRef || cleanRef.length > 8) {
+      if (onError) onError('La referencia bancaria debe contener solo los últimos dígitos numéricos (máximo 8 dígitos).');
+      return;
+    }
+
     if (!adultForm.foto_perfil) {
       if (onError) onError('Debes cargar tu foto de perfil para completar el registro.');
       return;
@@ -107,24 +158,24 @@ export default function RegisterAdultoForm({
     try {
       const formData = new FormData();
       formData.append('nombre_completo', adultForm.nombre_completo.trim());
-      formData.append('dni_cedula', adultForm.dni_cedula.trim());
+      formData.append('dni_cedula', docFinal);
       formData.append('genero', adultForm.genero);
       formData.append('fecha_nacimiento', adultForm.fecha_nacimiento);
       formData.append('estatura', adultForm.estatura);
       formData.append('peso', adultForm.peso);
       formData.append('talla_camiseta', adultForm.talla_camiseta);
       formData.append('talla_short', adultForm.talla_short);
-      formData.append('talla_zapatos', adultForm.talla_zapatos);
+      formData.append('talla_zapatos', cleanZapatos);
       formData.append('pierna_habil', adultForm.pierna_habil);
       formData.append('disciplina', adultForm.disciplina);
       formData.append('categoria_preferida', effectiveAdultCategory || 'Libre');
       formData.append('posicion_juego', adultForm.posicion_juego);
-      formData.append('telefono', adultForm.telefono.trim());
-      formData.append('email', adultForm.email.trim());
+      formData.append('telefono', cleanPhone);
+      formData.append('email', adultForm.email.trim().toLowerCase());
       formData.append('password', adultForm.password);
       formData.append('metodo_pago', adultForm.metodo_pago);
-      formData.append('referencia_bancaria', adultForm.referencia_bancaria.trim());
-      formData.append('telefono_pago', adultForm.telefono_pago.trim());
+      formData.append('referencia_bancaria', cleanRef);
+      formData.append('telefono_pago', (adultForm.telefono_pago || '').replace(/\D/g, '').slice(0, 11));
       formData.append('foto_perfil', adultForm.foto_perfil);
       formData.append('comprobante_pago', adultForm.comprobante_pago);
 
@@ -177,7 +228,7 @@ export default function RegisterAdultoForm({
       </div>
 
       {/* Datos personales */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
             Nombre Completo*
@@ -186,49 +237,96 @@ export default function RegisterAdultoForm({
             type="text"
             className="input-fenix"
             placeholder="Ej: Gabriel Antonio Rivas"
+            maxLength={60}
             value={adultForm.nombre_completo}
-            onChange={(e) => setAdultForm({ ...adultForm, nombre_completo: e.target.value })}
+            onChange={(e) =>
+              setAdultForm({
+                ...adultForm,
+                nombre_completo: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, ''),
+              })
+            }
             required
           />
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Cédula / DNI*
-            </label>
+
+        <div>
+          <label className="block text-xs font-semibold text-texto-secundario mb-1">
+            Cédula / DNI* (Máx. 20 números)
+          </label>
+          <div className="flex gap-1.5">
+            <select
+              className="input-fenix w-28 shrink-0 text-xs font-bold"
+              value={adultForm.doc_tipo || 'V'}
+              onChange={(e) => {
+                const tipo = e.target.value;
+                const num = adultForm.doc_num || '';
+                setAdultForm({
+                  ...adultForm,
+                  doc_tipo: tipo,
+                  dni_cedula: num ? `${tipo}-${num}` : '',
+                });
+              }}
+            >
+              <option value="V">V- (Ven.)</option>
+              <option value="E">E- (Ext.)</option>
+              <option value="PN">PN: (Partida)</option>
+            </select>
             <input
               type="text"
-              className="input-fenix"
-              placeholder="V-26123456"
-              value={adultForm.dni_cedula}
-              onChange={(e) => setAdultForm({ ...adultForm, dni_cedula: e.target.value })}
+              className="input-fenix flex-1 min-w-0 text-xs font-mono font-bold"
+              placeholder={adultForm.doc_tipo === 'E' ? '84123456' : '26123456'}
+              maxLength={20}
+              value={adultForm.doc_num || ''}
+              onChange={(e) => {
+                const num = e.target.value.replace(/\D/g, '').slice(0, 20);
+                const tipo = adultForm.doc_tipo || 'V';
+                setAdultForm({
+                  ...adultForm,
+                  doc_num: num,
+                  dni_cedula: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
+                });
+              }}
               required
             />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Género*
-            </label>
-            <select
-              className="input-fenix"
-              value={adultForm.genero}
-              onChange={(e) => setAdultForm({ ...adultForm, genero: e.target.value })}
-            >
-              <option value="Masculino">Masculino</option>
-              <option value="Femenino">Femenino</option>
-            </select>
           </div>
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Fecha de Nacimiento*
+            Género*
+          </label>
+          <select
+            className="input-fenix"
+            value={adultForm.genero}
+            onChange={(e) => setAdultForm({ ...adultForm, genero: e.target.value })}
+          >
+            <option value="Masculino">Masculino</option>
+            <option value="Femenino">Femenino</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Fecha de Nacimiento y Categoría Asignada */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-texto-secundario mb-1">
+            Fecha de Nacimiento* (Año de 4 dígitos)
           </label>
           <input
             type="date"
             className="input-fenix"
+            min="1940-01-01"
+            max={new Date().toISOString().slice(0, 10)}
             value={adultForm.fecha_nacimiento}
-            onChange={(e) => setAdultForm({ ...adultForm, fecha_nacimiento: e.target.value })}
+            onChange={(e) => {
+              let val = e.target.value;
+              const parts = val.split('-');
+              if (parts[0] && parts[0].length > 4) {
+                parts[0] = parts[0].slice(0, 4);
+                val = parts.join('-');
+              }
+              setAdultForm({ ...adultForm, fecha_nacimiento: val });
+            }}
             required
           />
         </div>
@@ -252,7 +350,7 @@ export default function RegisterAdultoForm({
             </div>
           ) : (
             <p className="text-xs text-green-400 font-bold mt-0.5">
-              {computedAge} años → {effectiveAdultCategory} ({adultForm.disciplina})
+              {computedAge} años → {effectiveAdultCategory} ({adultForm.disciplina}) • Matrícula: 15€
             </p>
           )}
         </div>
@@ -278,54 +376,25 @@ export default function RegisterAdultoForm({
         </div>
       )}
 
-      {/* Biometría y Perfil Deportivo */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Disciplina, Posición y Pie Hábil */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Estatura (m)*
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            min="1.20"
-            max="2.30"
-            className="input-fenix"
-            placeholder="1.78"
-            value={adultForm.estatura}
-            onChange={(e) => setAdultForm({ ...adultForm, estatura: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Peso (kg)*
-          </label>
-          <input
-            type="number"
-            step="0.1"
-            min="35"
-            max="200"
-            className="input-fenix"
-            placeholder="74.5"
-            value={adultForm.peso}
-            onChange={(e) => setAdultForm({ ...adultForm, peso: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Pie Hábil*
+            Disciplina / Equipo*
           </label>
           <select
             className="input-fenix"
-            value={adultForm.pierna_habil}
-            onChange={(e) => setAdultForm({ ...adultForm, pierna_habil: e.target.value })}
+            value={adultForm.disciplina}
+            onChange={(e) => setAdultForm({ ...adultForm, disciplina: e.target.value })}
           >
-            <option value="Derecha">Derecha</option>
-            <option value="Izquierda">Izquierda</option>
-            <option value="Ambidiestro">Ambidiestro</option>
+            {DISCIPLINES.map((disc) => (
+              <option key={disc.key} value={disc.label}>
+                {disc.label}
+              </option>
+            ))}
           </select>
         </div>
+
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
             Posición de Juego*
@@ -346,16 +415,61 @@ export default function RegisterAdultoForm({
             <option value="Ala (Sala)">Ala (Sala)</option>
           </select>
         </div>
-      </div>
 
-      {/* Tallas de Indumentaria y Calzado */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Talla de Camisa*
+            Pie Hábil*
           </label>
           <select
             className="input-fenix"
+            value={adultForm.pierna_habil}
+            onChange={(e) => setAdultForm({ ...adultForm, pierna_habil: e.target.value })}
+          >
+            <option value="Derecha">Derecha</option>
+            <option value="Izquierda">Izquierda</option>
+            <option value="Ambidiestro">Ambidiestro</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Tallas y Biometría Simétricas en 5 Columnas */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-texto-secundario mb-1">
+            Estatura (m)*
+          </label>
+          <input
+            type="text"
+            className="input-fenix"
+            placeholder="1.78"
+            maxLength={5}
+            value={adultForm.estatura}
+            onChange={(e) => setAdultForm({ ...adultForm, estatura: e.target.value })}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-texto-secundario mb-1">
+            Peso (kg)*
+          </label>
+          <input
+            type="text"
+            className="input-fenix"
+            placeholder="74.5"
+            maxLength={5}
+            value={adultForm.peso}
+            onChange={(e) => setAdultForm({ ...adultForm, peso: e.target.value })}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-texto-secundario mb-1">
+            Talla Camisa*
+          </label>
+          <select
+            className="input-fenix text-xs"
             value={adultForm.talla_camiseta}
             onChange={(e) => setAdultForm({ ...adultForm, talla_camiseta: e.target.value })}
           >
@@ -364,12 +478,13 @@ export default function RegisterAdultoForm({
             ))}
           </select>
         </div>
+
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Talla de Shorts*
+            Talla Shorts*
           </label>
           <select
-            className="input-fenix"
+            className="input-fenix text-xs"
             value={adultForm.talla_short}
             onChange={(e) => setAdultForm({ ...adultForm, talla_short: e.target.value })}
           >
@@ -378,80 +493,90 @@ export default function RegisterAdultoForm({
             ))}
           </select>
         </div>
+
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Talla de Zapatos*
+            Talla Zapatos* (2 dígitos)
           </label>
           <input
             type="text"
-            className="input-fenix"
-            placeholder="Ej: 41 / 42"
+            className="input-fenix font-mono font-bold"
+            placeholder="Ej: 41"
+            maxLength={2}
             value={adultForm.talla_zapatos}
-            onChange={(e) => setAdultForm({ ...adultForm, talla_zapatos: e.target.value })}
+            onChange={(e) =>
+              setAdultForm({
+                ...adultForm,
+                talla_zapatos: e.target.value.replace(/\D/g, '').slice(0, 2),
+              })
+            }
             required
           />
         </div>
       </div>
 
-      {/* Disciplina + Contacto */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Contacto y Credenciales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-neutral-800">
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Disciplina / Equipo*
-          </label>
-          <select
-            className="input-fenix"
-            value={adultForm.disciplina}
-            onChange={(e) => setAdultForm({ ...adultForm, disciplina: e.target.value })}
-          >
-            {DISCIPLINES.map((disc) => (
-              <option key={disc.key} value={disc.label}>
-                {disc.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Número de Teléfono*
+            Número de Teléfono* (Máx. 11 dígitos)
           </label>
           <input
             type="tel"
-            className="input-fenix"
+            className="input-fenix font-mono font-bold"
             placeholder="04145559876"
+            maxLength={11}
             value={adultForm.telefono}
-            onChange={(e) => setAdultForm({ ...adultForm, telefono: e.target.value })}
+            onChange={(e) =>
+              setAdultForm({
+                ...adultForm,
+                telefono: e.target.value.replace(/\D/g, '').slice(0, 11),
+              })
+            }
             required
           />
         </div>
+
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Correo Electrónico*
+            Correo Electrónico (Usuario)* (Máx. 50 caracteres)
           </label>
           <input
             type="email"
             className="input-fenix"
             placeholder="atleta@correo.com"
+            maxLength={50}
             value={adultForm.email}
-            onChange={(e) => setAdultForm({ ...adultForm, email: e.target.value })}
+            onChange={(e) =>
+              setAdultForm({
+                ...adultForm,
+                email: e.target.value.replace(/\s+/g, '').slice(0, 50),
+              })
+            }
             required
           />
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-texto-secundario mb-1">
-            Contraseña de Acceso*
-          </label>
-          <input
-            type="password"
-            className="input-fenix"
-            placeholder="8–20 car. (Mayús, Minús, N°, Signo)"
-            maxLength={20}
-            value={adultForm.password}
-            onChange={(e) => setAdultForm({ ...adultForm, password: e.target.value })}
-            required
-          />
-        </div>
-        <div className="sm:col-span-2">
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-texto-secundario mb-1">
+          Contraseña de Acceso* (8 a 20 caracteres, sin espacios)
+        </label>
+        <input
+          type="password"
+          className="input-fenix"
+          placeholder="••••••••••••"
+          maxLength={20}
+          value={adultForm.password}
+          onChange={(e) =>
+            setAdultForm({
+              ...adultForm,
+              password: e.target.value.replace(/\s+/g, '').slice(0, 20),
+            })
+          }
+          required
+        />
+        <div className="mt-2">
           <PasswordStrengthSemaforo password={adultForm.password} />
         </div>
       </div>
@@ -465,16 +590,16 @@ export default function RegisterAdultoForm({
         <PaymentMethodsBox
           amount={15}
           concept={`Inscripción ${effectiveAdultCategory || 'Adulto'} - ${adultForm.disciplina}`}
-          compact
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+        {/* Fila de Pagos Perfectamente Ordenada y Alineada */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
           <div>
-            <label className="block text-[11px] font-semibold text-texto-secundario mb-1">
+            <label className="block text-xs font-semibold text-texto-secundario mb-1">
               Método de Pago*
             </label>
             <select
-              className="input-fenix text-xs"
+              className="input-fenix"
               value={adultForm.metodo_pago}
               onChange={(e) => setAdultForm({ ...adultForm, metodo_pago: e.target.value })}
             >
@@ -483,32 +608,42 @@ export default function RegisterAdultoForm({
               <option value="Zelle">Zelle</option>
             </select>
           </div>
+
           <div>
-            <label className="block text-[11px] font-semibold text-texto-secundario mb-1">
-              Referencia Bancaria*
+            <label className="block text-xs font-semibold text-texto-secundario mb-1">
+              Referencia Bancaria (Últimos 8 dígitos)*
             </label>
             <input
               type="text"
-              className="input-fenix text-xs"
+              className="input-fenix font-mono font-bold"
               placeholder="Ej: 77441122"
+              maxLength={8}
               value={adultForm.referencia_bancaria}
               onChange={(e) =>
-                setAdultForm({ ...adultForm, referencia_bancaria: e.target.value })
+                setAdultForm({
+                  ...adultForm,
+                  referencia_bancaria: e.target.value.replace(/\D/g, '').slice(0, 8),
+                })
               }
               required
             />
           </div>
+
           <div>
-            <label className="block text-[11px] font-semibold text-texto-secundario mb-1">
-              Teléfono desde donde pagó*
+            <label className="block text-xs font-semibold text-texto-secundario mb-1">
+              Teléfono desde donde pagó* (Máx. 11 dígitos)
             </label>
             <input
               type="tel"
-              className="input-fenix text-xs"
+              className="input-fenix font-mono font-bold"
               placeholder="04145559876"
+              maxLength={11}
               value={adultForm.telefono_pago}
               onChange={(e) =>
-                setAdultForm({ ...adultForm, telefono_pago: e.target.value })
+                setAdultForm({
+                  ...adultForm,
+                  telefono_pago: e.target.value.replace(/\D/g, '').slice(0, 11),
+                })
               }
               required
             />

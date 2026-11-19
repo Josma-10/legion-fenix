@@ -43,7 +43,7 @@ export default function LoginPage() {
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div
           className={`w-full card-fenix p-5 sm:p-8 border-vinotinto/70 shadow-fenix transition-all duration-300 ${
-            isRegister ? 'max-w-3xl' : 'max-w-md'
+            isRegister ? 'max-w-4xl' : 'max-w-md'
           }`}
         >
           <div className="text-center mb-6">

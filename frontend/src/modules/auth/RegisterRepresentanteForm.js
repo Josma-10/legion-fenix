@@ -34,6 +34,8 @@ export default function RegisterRepresentanteForm({
   const [form, setForm] = useState({
     // Representante
     rep_nombre: '',
+    rep_doc_tipo: 'V', // 'V' | 'E' | 'PN'
+    rep_doc_num: '',
     rep_dni: '',
     rep_parentesco: 'Padre',
     rep_telefono: '',
@@ -105,12 +107,65 @@ export default function RegisterRepresentanteForm({
     e.preventDefault();
     if (onError) onError('');
 
-    // Validar espacios en usuario o contraseña
+    // QA 1: Validar nombres (solo letras y espacios, sin comas, asteriscos, números)
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+    if (!form.rep_nombre.trim() || !nameRegex.test(form.rep_nombre.trim())) {
+      if (onError) onError('El nombre del representante solo debe contener letras y espacios (sin números ni caracteres especiales).');
+      return;
+    }
+    if (!form.atleta_nombre_completo.trim() || !nameRegex.test(form.atleta_nombre_completo.trim())) {
+      if (onError) onError('El nombre del atleta solo debe contener letras y espacios (sin números ni caracteres especiales).');
+      return;
+    }
+
+    // QA 2: Cédula / DNI del Representante
+    const repDocTipo = form.rep_doc_tipo || 'V';
+    const repDocNum = (form.rep_doc_num || '').trim().replace(/\D/g, '').slice(0, 20);
+    const repDocFinal = repDocNum ? `${repDocTipo}-${repDocNum}` : form.rep_dni.trim();
+    if (!repDocFinal) {
+      if (onError) onError('Debes ingresar la Cédula / DNI del representante (solo números, máx. 20 dígitos).');
+      return;
+    }
+
+    // QA 3: Cédula o Partida del Atleta
+    const docTipo = form.atleta_doc_tipo || 'V';
+    const docNum = (form.atleta_doc_num || '').trim().replace(/\D/g, '').slice(0, 20);
+    const docFinal = docNum
+      ? (docTipo === 'PN' ? `PN:${docNum}` : `${docTipo}-${docNum}`)
+      : form.atleta_dni.trim();
+    if (!docFinal) {
+      if (onError) onError('Debes ingresar la Cédula o Código de Partida de Nacimiento del atleta (solo números, máx. 20 dígitos).');
+      return;
+    }
+
+    // QA 4: Teléfono (máximo 11 dígitos numéricos)
+    const cleanPhone = form.rep_telefono.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length > 11) {
+      if (onError) onError('El teléfono de contacto debe ser numérico con un máximo de 11 dígitos (Ej: 04121234567).');
+      return;
+    }
+
+    // QA 5: Correo (máximo 50 caracteres)
+    if (form.email.length > 50) {
+      if (onError) onError('El correo electrónico no puede exceder 50 caracteres.');
+      return;
+    }
     if (/\s/.test(form.email) || /\s/.test(form.password)) {
       if (onError) onError('No se permiten espacios en blanco en el correo ni en la contraseña.');
       return;
     }
 
+    // QA 6: Dirección (máximo 100 caracteres)
+    if (form.rep_direccion && form.rep_direccion.length > 100) {
+      if (onError) onError('La dirección de residencia no puede exceder 100 caracteres.');
+      return;
+    }
+
+    // QA 7: Contraseña (máximo 20 caracteres)
+    if (form.password.length > 20) {
+      if (onError) onError('La contraseña no puede tener más de 20 caracteres.');
+      return;
+    }
     if (!passwordCheck.isValid) {
       if (onError) {
         onError(
@@ -120,11 +175,11 @@ export default function RegisterRepresentanteForm({
       return;
     }
 
+    // QA 8: Fecha de nacimiento y 4 dígitos de año
     if (computedAge === null) {
       if (onError) onError('Selecciona la fecha de nacimiento del atleta para validar su edad y categoría.');
       return;
     }
-
     if (computedAge >= 18) {
       if (onError) {
         onError(
@@ -135,14 +190,17 @@ export default function RegisterRepresentanteForm({
       return;
     }
 
-    const docTipo = form.atleta_doc_tipo || 'V';
-    const docNum = (form.atleta_doc_num || '').trim().replace(/\s+/g, '');
-    const docFinal = docNum
-      ? (docTipo === 'PN' ? `PN:${docNum}` : `${docTipo}-${docNum}`)
-      : form.atleta_dni.trim();
+    // QA 9: Talla de zapatos (solo 2 caracteres numéricos)
+    const cleanZapatos = form.talla_zapatos.replace(/\D/g, '');
+    if (!cleanZapatos || cleanZapatos.length > 2) {
+      if (onError) onError('La talla de zapatos debe contener únicamente hasta 2 dígitos numéricos (Ej: 34).');
+      return;
+    }
 
-    if (!docFinal) {
-      if (onError) onError('Debes ingresar la Cédula o Código de Partida de Nacimiento del atleta.');
+    // QA 10: Referencia bancaria (máximo 8 dígitos numéricos)
+    const cleanRef = form.referencia_bancaria.replace(/\D/g, '');
+    if (!cleanRef || cleanRef.length > 8) {
+      if (onError) onError('La referencia bancaria debe contener solo los últimos dígitos numéricos (máximo 8 dígitos).');
       return;
     }
 
@@ -160,9 +218,9 @@ export default function RegisterRepresentanteForm({
     try {
       const formData = new FormData();
       formData.append('rep_nombre', form.rep_nombre.trim());
-      formData.append('rep_dni', form.rep_dni.trim());
+      formData.append('rep_dni', repDocFinal);
       formData.append('rep_parentesco', form.rep_parentesco);
-      formData.append('rep_telefono', form.rep_telefono.trim());
+      formData.append('rep_telefono', cleanPhone);
       formData.append('rep_direccion', form.rep_direccion.trim());
       formData.append('email', form.email.trim().toLowerCase());
       formData.append('password', form.password);
@@ -178,11 +236,11 @@ export default function RegisterRepresentanteForm({
       formData.append('posicion_juego', form.posicion_juego);
       formData.append('talla_camiseta', form.talla_camiseta);
       formData.append('talla_short', form.talla_short);
-      formData.append('talla_zapatos', form.talla_zapatos);
+      formData.append('talla_zapatos', cleanZapatos);
 
       formData.append('metodo_pago', form.metodo_pago);
-      formData.append('referencia_bancaria', form.referencia_bancaria.trim());
-      formData.append('telefono_pago', form.telefono_pago.trim());
+      formData.append('referencia_bancaria', cleanRef);
+      formData.append('telefono_pago', (form.telefono_pago || '').replace(/\D/g, '').slice(0, 11));
 
       formData.append('foto_perfil', form.foto_perfil);
       formData.append('comprobante_pago', form.comprobante_pago);
@@ -211,7 +269,7 @@ export default function RegisterRepresentanteForm({
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
               Nombre Completo del Representante*
@@ -220,96 +278,144 @@ export default function RegisterRepresentanteForm({
               type="text"
               className="input-fenix"
               placeholder="Ej: Carlos Eduardo Mendoza"
+              maxLength={60}
               value={form.rep_nombre}
-              onChange={(e) => setForm({ ...form, rep_nombre: e.target.value })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  rep_nombre: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, ''),
+                })
+              }
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">
-                Cédula / DNI*
-              </label>
+          <div>
+            <label className="block text-xs font-semibold text-texto-secundario mb-1">
+              Cédula / DNI* (Máx. 20 números)
+            </label>
+            <div className="flex gap-1.5">
+              <select
+                className="input-fenix w-28 shrink-0 text-xs font-bold"
+                value={form.rep_doc_tipo || 'V'}
+                onChange={(e) => {
+                  const tipo = e.target.value;
+                  const num = form.rep_doc_num || '';
+                  setForm({
+                    ...form,
+                    rep_doc_tipo: tipo,
+                    rep_dni: num ? `${tipo}-${num}` : '',
+                  });
+                }}
+              >
+                <option value="V">V- (Ven.)</option>
+                <option value="E">E- (Ext.)</option>
+                <option value="PN">PN: (Partida)</option>
+              </select>
               <input
                 type="text"
-                className="input-fenix"
-                placeholder="V-18234567"
-                value={form.rep_dni}
-                onChange={(e) => setForm({ ...form, rep_dni: e.target.value })}
+                className="input-fenix flex-1 min-w-0 text-xs font-mono font-bold"
+                placeholder={form.rep_doc_tipo === 'E' ? '84123456' : '18234567'}
+                maxLength={20}
+                value={form.rep_doc_num || ''}
+                onChange={(e) => {
+                  const num = e.target.value.replace(/\D/g, '').slice(0, 20);
+                  const tipo = form.rep_doc_tipo || 'V';
+                  setForm({
+                    ...form,
+                    rep_doc_num: num,
+                    rep_dni: num ? `${tipo}-${num}` : '',
+                  });
+                }}
                 required
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">
-                Parentesco
-              </label>
-              <select
-                className="input-fenix"
-                value={form.rep_parentesco}
-                onChange={(e) => setForm({ ...form, rep_parentesco: e.target.value })}
-              >
-                <option value="Padre">Padre</option>
-                <option value="Madre">Madre</option>
-                <option value="Tutor">Tutor Legal</option>
-              </select>
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-texto-secundario mb-1">
+              Parentesco*
+            </label>
+            <select
+              className="input-fenix"
+              value={form.rep_parentesco}
+              onChange={(e) => setForm({ ...form, rep_parentesco: e.target.value })}
+            >
+              <option value="Padre">Padre</option>
+              <option value="Madre">Madre</option>
+              <option value="Tutor">Tutor Legal</option>
+            </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Teléfono de Contacto WhatsApp*
+              Teléfono de Contacto WhatsApp* (Máx. 11 dígitos)
             </label>
             <input
               type="tel"
-              className="input-fenix"
-              placeholder="0412-1234567"
+              className="input-fenix font-mono"
+              placeholder="04121234567"
+              maxLength={11}
               value={form.rep_telefono}
-              onChange={(e) => setForm({ ...form, rep_telefono: e.target.value })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  rep_telefono: e.target.value.replace(/\D/g, '').slice(0, 11),
+                })
+              }
               required
             />
           </div>
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Dirección de Residencia
+              Dirección de Residencia (Máx. 100 caracteres)
             </label>
             <input
               type="text"
               className="input-fenix"
               placeholder="Sector, Urb., Ciudad"
+              maxLength={100}
               value={form.rep_direccion}
-              onChange={(e) => setForm({ ...form, rep_direccion: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, rep_direccion: e.target.value.slice(0, 100) })
+              }
             />
           </div>
         </div>
 
         {/* Credenciales de Acceso */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-neutral-800/80">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-neutral-800/80">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Correo Electrónico (Usuario)*
+              Correo Electrónico (Usuario)* (Máx. 50 caracteres)
             </label>
             <input
               type="email"
               className="input-fenix"
               placeholder="correo@ejemplo.com"
+              maxLength={50}
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value.replace(/\s+/g, '') })}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value.replace(/\s+/g, '').slice(0, 50) })
+              }
               required
             />
           </div>
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Contraseña de Acceso* (Sin Espacios)
+              Contraseña de Acceso* (8 a 20 caracteres, sin espacios)
             </label>
             <input
               type="password"
               className="input-fenix"
               placeholder="••••••••••••"
+              maxLength={20}
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value.replace(/\s+/g, '') })}
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value.replace(/\s+/g, '').slice(0, 20) })
+              }
               required
             />
           </div>
@@ -332,7 +438,7 @@ export default function RegisterRepresentanteForm({
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
               Nombre Completo del Atleta*
@@ -341,91 +447,102 @@ export default function RegisterRepresentanteForm({
               type="text"
               className="input-fenix"
               placeholder="Ej: Daniel Alejandro Mendoza"
+              maxLength={60}
               value={form.atleta_nombre_completo}
-              onChange={(e) => setForm({ ...form, atleta_nombre_completo: e.target.value })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  atleta_nombre_completo: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, ''),
+                })
+              }
               required
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">
-                Cédula / Partida Nac.*
-              </label>
-              <div className="flex gap-1.5">
-                <select
-                  className="input-fenix w-28 shrink-0 text-xs font-bold"
-                  value={form.atleta_doc_tipo || 'V'}
-                  onChange={(e) => {
-                    const tipo = e.target.value;
-                    const num = form.atleta_doc_num || '';
-                    setForm({
-                      ...form,
-                      atleta_doc_tipo: tipo,
-                      atleta_dni: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
-                    });
-                  }}
-                >
-                  <option value="V">V- (Ven.)</option>
-                  <option value="E">E- (Ext.)</option>
-                  <option value="PN">PN: (Partida)</option>
-                </select>
-                <input
-                  type="text"
-                  className="input-fenix flex-1 min-w-0 text-xs"
-                  placeholder={
-                    form.atleta_doc_tipo === 'PN'
-                      ? 'Nº Acta o Código Partida'
-                      : form.atleta_doc_tipo === 'E'
-                      ? 'Ej: 84123456'
-                      : 'Ej: 32123456'
-                  }
-                  value={form.atleta_doc_num || ''}
-                  onChange={(e) => {
-                    const num = e.target.value.replace(/\s+/g, '');
-                    const tipo = form.atleta_doc_tipo || 'V';
-                    setForm({
-                      ...form,
-                      atleta_doc_num: num,
-                      atleta_dni: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
-                    });
-                  }}
-                  required
-                />
-              </div>
-              {form.atleta_doc_tipo === 'PN' && (
-                <p className="text-[10px] text-amber-400/90 mt-1">
-                  *Para menores de 9 años sin cédula. Podrás actualizar a Cédula (V/E) en cualquier momento desde el Portal.
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">
-                Género
-              </label>
+          <div>
+            <label className="block text-xs font-semibold text-texto-secundario mb-1">
+              Cédula / Partida Nac.* (Máx. 20 números)
+            </label>
+            <div className="flex gap-1.5">
               <select
-                className="input-fenix"
-                value={form.atleta_genero}
-                onChange={(e) => setForm({ ...form, atleta_genero: e.target.value })}
+                className="input-fenix w-28 shrink-0 text-xs font-bold"
+                value={form.atleta_doc_tipo || 'V'}
+                onChange={(e) => {
+                  const tipo = e.target.value;
+                  const num = form.atleta_doc_num || '';
+                  setForm({
+                    ...form,
+                    atleta_doc_tipo: tipo,
+                    atleta_dni: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
+                  });
+                }}
               >
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
+                <option value="V">V- (Ven.)</option>
+                <option value="E">E- (Ext.)</option>
+                <option value="PN">PN: (Partida)</option>
               </select>
+              <input
+                type="text"
+                className="input-fenix flex-1 min-w-0 text-xs font-mono font-bold"
+                placeholder={
+                  form.atleta_doc_tipo === 'PN'
+                    ? 'Nº Acta Partida'
+                    : form.atleta_doc_tipo === 'E'
+                    ? '84123456'
+                    : '32123456'
+                }
+                maxLength={20}
+                value={form.atleta_doc_num || ''}
+                onChange={(e) => {
+                  const num = e.target.value.replace(/\D/g, '').slice(0, 20);
+                  const tipo = form.atleta_doc_tipo || 'V';
+                  setForm({
+                    ...form,
+                    atleta_doc_num: num,
+                    atleta_dni: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
+                  });
+                }}
+                required
+              />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-texto-secundario mb-1">
+              Género*
+            </label>
+            <select
+              className="input-fenix"
+              value={form.atleta_genero}
+              onChange={(e) => setForm({ ...form, atleta_genero: e.target.value })}
+            >
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+            </select>
           </div>
         </div>
 
         {/* Fecha de Nacimiento y Categoría Automática */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Fecha de Nacimiento del Menor*
+              Fecha de Nacimiento del Menor* (Año de 4 dígitos)
             </label>
             <input
               type="date"
               className="input-fenix"
+              min="1940-01-01"
+              max={new Date().toISOString().slice(0, 10)}
               value={form.atleta_fecha_nacimiento}
-              onChange={(e) => setForm({ ...form, atleta_fecha_nacimiento: e.target.value })}
+              onChange={(e) => {
+                let val = e.target.value;
+                const parts = val.split('-');
+                if (parts[0] && parts[0].length > 4) {
+                  parts[0] = parts[0].slice(0, 4);
+                  val = parts.join('-');
+                }
+                setForm({ ...form, atleta_fecha_nacimiento: val });
+              }}
               required
             />
           </div>
@@ -448,7 +565,7 @@ export default function RegisterRepresentanteForm({
         </div>
 
         {/* Disciplina y Posición */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
               Disciplina / Modalidad*
@@ -501,8 +618,8 @@ export default function RegisterRepresentanteForm({
           </div>
         </div>
 
-        {/* Tallas de Uniforme, Zapatos, Estatura y Peso */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {/* Tallas de Uniforme, Zapatos, Estatura y Peso: Totalmente Alineadas y Simétricas */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
               Estatura (m)
@@ -511,6 +628,7 @@ export default function RegisterRepresentanteForm({
               type="text"
               className="input-fenix"
               placeholder="1.42"
+              maxLength={5}
               value={form.estatura}
               onChange={(e) => setForm({ ...form, estatura: e.target.value })}
             />
@@ -524,6 +642,7 @@ export default function RegisterRepresentanteForm({
               type="text"
               className="input-fenix"
               placeholder="38"
+              maxLength={5}
               value={form.peso}
               onChange={(e) => setForm({ ...form, peso: e.target.value })}
             />
@@ -577,22 +696,25 @@ export default function RegisterRepresentanteForm({
             </select>
           </div>
 
-          <div className="col-span-2 sm:col-span-1">
+          <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Talla Zapatos*
+              Talla Zapatos* (2 dígitos)
             </label>
             <input
               type="text"
-              className="input-fenix"
+              className="input-fenix font-mono font-bold"
               placeholder="Ej: 34"
+              maxLength={2}
               value={form.talla_zapatos}
-              onChange={(e) => setForm({ ...form, talla_zapatos: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, talla_zapatos: e.target.value.replace(/\D/g, '').slice(0, 2) })
+              }
               required
             />
           </div>
         </div>
 
-        {/* FOTO DE PERFIL DEL ATLETA */}
+        {/* FOTO DE PERFIL DEL ATLETA ESTILIZADA */}
         <div className="pt-2 border-t border-neutral-800">
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
             Fotografía de Perfil del Atleta* (Formato Carnet / Rostro)
@@ -610,14 +732,17 @@ export default function RegisterRepresentanteForm({
                 Sin foto
               </div>
             )}
-            <div className="space-y-1 text-xs">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-vinotinto file:text-white file:font-semibold hover:file:bg-rojo-fuego file:cursor-pointer"
-                required
-              />
+            <div className="space-y-1.5 text-xs">
+              <label className="btn-vinotinto text-xs cursor-pointer inline-flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5" />
+                {form.foto_perfil ? form.foto_perfil.name : 'Subir Foto de Perfil'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </label>
               <p className="text-[11px] text-texto-secundario">
                 Foto nítida del rostro del atleta, con fondo claro preferiblemente para su carnet oficial.
               </p>
@@ -640,7 +765,8 @@ export default function RegisterRepresentanteForm({
           concept={`Inscripción ${recommendedCategory ? `${recommendedCategory} (${computedAge || 0} años)` : 'Atleta'} - ${form.disciplina}`}
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Fila de Pagos Perfectamente Ordenada y Alineada */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
               Método de Pago*
@@ -658,34 +784,46 @@ export default function RegisterRepresentanteForm({
 
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Referencia Bancaria (Últimos dígitos)*
+              Referencia Bancaria (Últimos 8 dígitos)*
             </label>
             <input
               type="text"
-              className="input-fenix"
-              placeholder="Ej: 987654"
+              className="input-fenix font-mono font-bold"
+              placeholder="Ej: 12345678"
+              maxLength={8}
               value={form.referencia_bancaria}
-              onChange={(e) => setForm({ ...form, referencia_bancaria: e.target.value })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  referencia_bancaria: e.target.value.replace(/\D/g, '').slice(0, 8),
+                })
+              }
               required
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-texto-secundario mb-1">
-              Teléfono del Pago Móvil*
+              Teléfono del Pago Móvil* (Máx. 11 dígitos)
             </label>
             <input
               type="tel"
-              className="input-fenix"
-              placeholder="0412-1234567"
+              className="input-fenix font-mono font-bold"
+              placeholder="04121234567"
+              maxLength={11}
               value={form.telefono_pago}
-              onChange={(e) => setForm({ ...form, telefono_pago: e.target.value })}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  telefono_pago: e.target.value.replace(/\D/g, '').slice(0, 11),
+                })
+              }
               required
             />
           </div>
         </div>
 
-        {/* COMPROBANTE O CAPTURE */}
+        {/* COMPROBANTE O CAPTURE ESTILIZADO */}
         <div>
           <label className="block text-xs font-semibold text-texto-secundario mb-1">
             Capture o Comprobante del Pago de Inscripción*
@@ -703,14 +841,17 @@ export default function RegisterRepresentanteForm({
                 Capture
               </div>
             )}
-            <div className="space-y-1 text-xs">
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={handleComprobanteChange}
-                className="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-vinotinto file:text-white file:font-semibold hover:file:bg-rojo-fuego file:cursor-pointer"
-                required
-              />
+            <div className="space-y-1.5 text-xs">
+              <label className="btn-vinotinto text-xs cursor-pointer inline-flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5" />
+                {form.comprobante_pago ? form.comprobante_pago.name : 'Subir Capture de Pago'}
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleComprobanteChange}
+                  className="hidden"
+                />
+              </label>
               <p className="text-[11px] text-texto-secundario">
                 Adjunta la captura legible del comprobante bancario para la verificación de administración.
               </p>

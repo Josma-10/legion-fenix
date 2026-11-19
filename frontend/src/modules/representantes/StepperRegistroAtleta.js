@@ -147,15 +147,25 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
 
   const validateCurrentStep = () => {
     setError('');
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
     if (step === 1) {
       if (!representanteData.documento_identidad || !representanteData.telefono_emergencia) {
         setError('Complete documento de identidad y teléfono de emergencia del representante.');
+        return false;
+      }
+      const cleanPhone = representanteData.telefono_emergencia.replace(/\D/g, '');
+      if (cleanPhone.length > 11) {
+        setError('El teléfono de emergencia debe contener como máximo 11 dígitos.');
         return false;
       }
     }
     if (step === 2) {
       if (!jugadorData.nombre || !jugadorData.apellido || !jugadorData.fecha_nacimiento || !jugadorData.dni_cedula || !jugadorData.id_categoria) {
         setError('Complete nombre, apellido, DNI/Cédula, fecha de nacimiento y categoría del atleta.');
+        return false;
+      }
+      if (!nameRegex.test(jugadorData.nombre.trim()) || !nameRegex.test(jugadorData.apellido.trim())) {
+        setError('El nombre y apellido del alumno solo deben contener letras y espacios (sin caracteres especiales ni números).');
         return false;
       }
     }
@@ -168,6 +178,11 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
     if (step === 4) {
       if (!uniformeData.talla_camiseta || !uniformeData.talla_short) {
         setError('Seleccione las tallas de camiseta y short.');
+        return false;
+      }
+      const cleanZap = (uniformeData.talla_zapatos || '').replace(/\D/g, '');
+      if (!cleanZap || cleanZap.length > 2) {
+        setError('La talla de zapatos debe ser numérica con un máximo de 2 dígitos (Ej: 35).');
         return false;
       }
     }
@@ -293,33 +308,51 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">Teléfono Principal</label>
+              <label className="block text-xs font-semibold text-texto-secundario mb-1">Teléfono Principal (Máx. 11 dígitos)</label>
               <input
-                type="text"
-                className="input-fenix"
+                type="tel"
+                className="input-fenix font-mono font-bold"
+                maxLength={11}
                 value={representanteData.telefono}
-                onChange={(e) => setRepresentanteData({ ...representanteData, telefono: e.target.value })}
-                placeholder="+58 412..."
+                onChange={(e) =>
+                  setRepresentanteData({
+                    ...representanteData,
+                    telefono: e.target.value.replace(/\D/g, '').slice(0, 11),
+                  })
+                }
+                placeholder="04121234567"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">Teléfono de Emergencia*</label>
+              <label className="block text-xs font-semibold text-texto-secundario mb-1">Teléfono de Emergencia* (Máx. 11 dígitos)</label>
               <input
-                type="text"
-                className="input-fenix"
+                type="tel"
+                className="input-fenix font-mono font-bold"
+                maxLength={11}
                 value={representanteData.telefono_emergencia}
-                onChange={(e) => setRepresentanteData({ ...representanteData, telefono_emergencia: e.target.value })}
-                placeholder="+58 414..."
+                onChange={(e) =>
+                  setRepresentanteData({
+                    ...representanteData,
+                    telefono_emergencia: e.target.value.replace(/\D/g, '').slice(0, 11),
+                  })
+                }
+                placeholder="04141234567"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-texto-secundario mb-1">Dirección de Habitación</label>
+              <label className="block text-xs font-semibold text-texto-secundario mb-1">Dirección de Habitación (Máx. 100 car.)</label>
               <input
                 type="text"
                 className="input-fenix"
+                maxLength={100}
                 value={representanteData.direccion}
-                onChange={(e) => setRepresentanteData({ ...representanteData, direccion: e.target.value })}
+                onChange={(e) =>
+                  setRepresentanteData({
+                    ...representanteData,
+                    direccion: e.target.value.slice(0, 100),
+                  })
+                }
                 placeholder="Urbanización / Calle / Residencia"
               />
             </div>
@@ -351,8 +384,14 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                 <input
                   type="text"
                   className="input-fenix"
+                  maxLength={60}
                   value={jugadorData.nombre}
-                  onChange={(e) => setJugadorData({ ...jugadorData, nombre: e.target.value })}
+                  onChange={(e) =>
+                    setJugadorData({
+                      ...jugadorData,
+                      nombre: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, ''),
+                    })
+                  }
                   placeholder="Ej: Mateo Alejandro"
                 />
               </div>
@@ -361,13 +400,19 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                 <input
                   type="text"
                   className="input-fenix"
+                  maxLength={60}
                   value={jugadorData.apellido}
-                  onChange={(e) => setJugadorData({ ...jugadorData, apellido: e.target.value })}
+                  onChange={(e) =>
+                    setJugadorData({
+                      ...jugadorData,
+                      apellido: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, ''),
+                    })
+                  }
                   placeholder="Ej: Mendoza Ruiz"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-texto-secundario mb-1">DNI / Cédula / Partida*</label>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">DNI / Cédula / Partida* (Máx. 20 números)</label>
                 <div className="flex gap-1.5">
                   <select
                     className="input-fenix w-28 shrink-0 text-xs font-bold"
@@ -388,10 +433,11 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                   </select>
                   <input
                     type="text"
-                    className="input-fenix flex-1 min-w-0 text-xs"
+                    className="input-fenix flex-1 min-w-0 text-xs font-mono font-bold"
+                    maxLength={20}
                     value={jugadorData.doc_num || ''}
                     onChange={(e) => {
-                      const num = e.target.value.replace(/\s+/g, '');
+                      const num = e.target.value.replace(/\D/g, '').slice(0, 20);
                       const tipo = jugadorData.doc_tipo || 'V';
                       setJugadorData({
                         ...jugadorData,
@@ -401,10 +447,10 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                     }}
                     placeholder={
                       jugadorData.doc_tipo === 'PN'
-                        ? 'Nº Acta o Código Partida'
+                        ? 'Nº Acta Partida'
                         : jugadorData.doc_tipo === 'E'
-                        ? 'Ej: 84123456'
-                        : 'Ej: 34900112'
+                        ? '84123456'
+                        : '34900112'
                     }
                   />
                 </div>
@@ -415,12 +461,22 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                 )}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-texto-secundario mb-1">Fecha de Nacimiento*</label>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">Fecha de Nacimiento* (Año de 4 dígitos)</label>
                 <input
                   type="date"
                   className="input-fenix"
+                  min="1940-01-01"
+                  max={new Date().toISOString().slice(0, 10)}
                   value={jugadorData.fecha_nacimiento}
-                  onChange={(e) => setJugadorData({ ...jugadorData, fecha_nacimiento: e.target.value })}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    const parts = val.split('-');
+                    if (parts[0] && parts[0].length > 4) {
+                      parts[0] = parts[0].slice(0, 4);
+                      val = parts.join('-');
+                    }
+                    setJugadorData({ ...jugadorData, fecha_nacimiento: val });
+                  }}
                 />
                 {computedAge !== null && (
                   <p className="text-[11px] text-green-400 font-semibold mt-1">
@@ -652,13 +708,19 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-texto-secundario mb-1">Talla de Zapatos*</label>
+                <label className="block text-xs font-semibold text-texto-secundario mb-1">Talla de Zapatos* (2 dígitos)</label>
                 <input
                   type="text"
-                  className="input-fenix"
-                  placeholder="Ej: 35 / 40"
+                  className="input-fenix font-mono font-bold"
+                  placeholder="Ej: 35"
+                  maxLength={2}
                   value={uniformeData.talla_zapatos}
-                  onChange={(e) => setUniformeData({ ...uniformeData, talla_zapatos: e.target.value })}
+                  onChange={(e) =>
+                    setUniformeData({
+                      ...uniformeData,
+                      talla_zapatos: e.target.value.replace(/\D/g, '').slice(0, 2),
+                    })
+                  }
                   required
                 />
               </div>

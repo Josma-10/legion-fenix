@@ -182,7 +182,7 @@ export default function AdminPanel() {
 
         {/* Barra de Navegación Modular estilo Gesdep 4.0 */}
         <div className="border-b border-neutral-800 pb-3">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="flex flex-wrap items-center gap-2 py-1">
             <button
               type="button"
               onClick={() => setActiveTab('asistencia')}
