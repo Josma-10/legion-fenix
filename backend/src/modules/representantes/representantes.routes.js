@@ -12,6 +12,7 @@ router.get('/:id', verifyToken, checkRole(['REPRESENTANTE', 'ATLETA', 'ENTRENADO
 router.patch('/:id/convocatorias/:idPartido', verifyToken, checkRole(['REPRESENTANTE', 'ATLETA', 'ADMINISTRADOR']), representantesController.respondConvocation);
 router.patch('/:id/entrenamientos/:idTrabajo', verifyToken, checkRole(['REPRESENTANTE', 'ATLETA', 'ADMINISTRADOR']), representantesController.respondTrainingAttendance);
 router.patch('/:id/sizes', verifyToken, checkRole(['REPRESENTANTE', 'ATLETA', 'ENTRENADOR', 'ANALISTA_ADMIN', 'ADMINISTRADOR']), representantesController.updatePlayerSizes);
+router.patch('/:id/documento', verifyToken, checkRole(['REPRESENTANTE', 'ATLETA', 'ADMINISTRADOR']), representantesController.updatePlayerDocument);
 router.post('/upload-photo', verifyToken, uploadCloud.single('foto'), representantesController.uploadPlayerPhoto);
 router.post('/register-complete', verifyToken, checkRole(['REPRESENTANTE']), representantesController.registerCompleteAthlete);
 

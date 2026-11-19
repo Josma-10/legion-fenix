@@ -356,3 +356,32 @@ exports.updatePlayerSizes = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.updatePlayerDocument = async (req, res) => {
+  const idJugador = Number(req.params.id);
+  const { dni_cedula } = req.body;
+
+  if (!dni_cedula || !String(dni_cedula).trim()) {
+    return res.status(400).json({ error: 'El documento o cédula es obligatorio.' });
+  }
+
+  try {
+    const player = await representantesModel.getPlayerById(idJugador);
+    if (!player) return res.status(404).json({ error: 'Atleta no encontrado.' });
+
+    if (req.user.rol === 'REPRESENTANTE' || req.user.rol === 'ATLETA') {
+      const userRepId = await resolveUserRepresentanteId(req);
+      if (player.id_representante !== userRepId) {
+        return res.status(403).json({ error: 'No autorizado para editar el documento de este atleta.' });
+      }
+    }
+
+    const updated = await representantesModel.updatePlayerDocument(idJugador, dni_cedula);
+    return res.json({
+      message: 'Documento de identidad (cédula / partida) actualizado exitosamente.',
+      player: updated,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};

@@ -362,7 +362,18 @@ const createMinorWithRepresentativeUser = async ({
       )
       VALUES ($1, $2, TRUE, TRUE, $3)`,
       [player.id_jugador, rep.id_representante, repNombre]
-    );
+    // Calcular tarifa de inscripción oficial: Menor 0-17 años: 10€, Mayor >=18 años: 15€
+    let edadAtleta = null;
+    if (atletaFechaNacimiento) {
+      const birth = new Date(atletaFechaNacimiento);
+      const today = new Date();
+      edadAtleta = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        edadAtleta--;
+      }
+    }
+    const montoInscripcion = (edadAtleta !== null && edadAtleta >= 18) ? 15.00 : 10.00;
 
     const txRes = await client.query(
       `INSERT INTO transacciones_jugador (
@@ -371,21 +382,22 @@ const createMinorWithRepresentativeUser = async ({
         telefono_pago, comprobante_url, comprobante_estado, tasa_bcv, monto_bs, fecha_pago
       )
       VALUES (
-        $1, $2, 'Inscripcion', $3, 15.00,
-        CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days', 'Pendiente', $4, $5,
-        $6, $7, 'En_Revision', $8, $9, CURRENT_TIMESTAMP
+        $1, $2, 'Inscripcion', $3, $4,
+        CURRENT_DATE, CURRENT_DATE + INTERVAL '7 days', 'Pendiente', $5, $6,
+        $7, $8, 'En_Revision', $9, $10, CURRENT_TIMESTAMP
       )
       RETURNING *`,
       [
         player.id_jugador,
         rep.id_representante,
         `Inscripción Menor (${disciplinaNombre} - ${categoriaNombre})`,
+        montoInscripcion,
         metodo_pago || 'Pago Móvil',
         referencia_bancaria,
         telefono_pago,
         comprobante_url,
         tasa_bcv,
-        monto_bs,
+        monto_bs || (tasa_bcv ? Number((montoInscripcion * tasa_bcv).toFixed(2)) : null),
       ]
     );
 

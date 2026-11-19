@@ -114,14 +114,6 @@ export default function PaymentMethodsBox({
             </span>
           </div>
         </div>
-
-        {tasa > 0 && (
-          <CopyButton
-            value={plainBs}
-            label={`Copiar ${plainBs} Bs.`}
-            className="bg-vinotinto/80 hover:bg-rojo-fuego border border-rojo-fuego/60 text-white py-1.5 px-3"
-          />
-        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800/90 text-[11px] text-texto-secundario">

@@ -47,6 +47,8 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
     nombre: '',
     apellido: '',
     fecha_nacimiento: '',
+    doc_tipo: 'V',
+    doc_num: '',
     dni_cedula: '',
     genero: 'Masculino',
     id_categoria: categories[0]?.id_categoria || '',
@@ -366,13 +368,51 @@ export default function StepperRegistroAtleta({ user, categories = [], onRegiste
               </div>
               <div>
                 <label className="block text-xs font-semibold text-texto-secundario mb-1">DNI / Cédula / Partida*</label>
-                <input
-                  type="text"
-                  className="input-fenix"
-                  value={jugadorData.dni_cedula}
-                  onChange={(e) => setJugadorData({ ...jugadorData, dni_cedula: e.target.value })}
-                  placeholder="Ej: V-34900112"
-                />
+                <div className="flex gap-1.5">
+                  <select
+                    className="input-fenix w-28 shrink-0 text-xs font-bold"
+                    value={jugadorData.doc_tipo || 'V'}
+                    onChange={(e) => {
+                      const tipo = e.target.value;
+                      const num = jugadorData.doc_num || '';
+                      setJugadorData({
+                        ...jugadorData,
+                        doc_tipo: tipo,
+                        dni_cedula: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
+                      });
+                    }}
+                  >
+                    <option value="V">V- (Ven.)</option>
+                    <option value="E">E- (Ext.)</option>
+                    <option value="PN">PN: (Partida)</option>
+                  </select>
+                  <input
+                    type="text"
+                    className="input-fenix flex-1 min-w-0 text-xs"
+                    value={jugadorData.doc_num || ''}
+                    onChange={(e) => {
+                      const num = e.target.value.replace(/\s+/g, '');
+                      const tipo = jugadorData.doc_tipo || 'V';
+                      setJugadorData({
+                        ...jugadorData,
+                        doc_num: num,
+                        dni_cedula: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
+                      });
+                    }}
+                    placeholder={
+                      jugadorData.doc_tipo === 'PN'
+                        ? 'Nº Acta o Código Partida'
+                        : jugadorData.doc_tipo === 'E'
+                        ? 'Ej: 84123456'
+                        : 'Ej: 34900112'
+                    }
+                  />
+                </div>
+                {jugadorData.doc_tipo === 'PN' && (
+                  <p className="text-[10px] text-amber-400/90 mt-1">
+                    *Para menores de 9 años sin cédula. Podrás actualizarlo a Cédula (V/E) más adelante.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-texto-secundario mb-1">Fecha de Nacimiento*</label>

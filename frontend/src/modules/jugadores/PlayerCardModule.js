@@ -332,6 +332,12 @@ export default function PlayerCardModule({ player, evaluation = null, compact = 
               </span>
             </div>
             <div className="flex items-center justify-between py-1.5 border-b border-white/10">
+              <span className="text-neutral-400">Documento / Cédula</span>
+              <span className="font-bold text-amber-300 font-mono">
+                {player.dni_cedula || '--'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-1.5 border-b border-white/10">
               <span className="text-neutral-400">Estatura / Peso</span>
               <span className="font-bold text-white">
                 {player.altura_m ? `${player.altura_m} m` : '--'} /{' '}

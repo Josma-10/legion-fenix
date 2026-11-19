@@ -31,9 +31,6 @@ export default function RegisterRepresentanteForm({
   const { bcv } = useBcvRate();
   const tasa = Number(bcv?.tasa_bcv || 0);
 
-  // Cuota oficial de Inscripción: 15 Euros calculada a tasa BCV del día
-  const montoBsInscripcion = calcPriceBs(15, tasa);
-
   const [form, setForm] = useState({
     // Representante
     rep_nombre: '',
@@ -46,6 +43,8 @@ export default function RegisterRepresentanteForm({
 
     // Atleta Menor
     atleta_nombre_completo: '',
+    atleta_doc_tipo: 'V', // 'V' | 'E' | 'PN'
+    atleta_doc_num: '',
     atleta_dni: '',
     atleta_genero: 'Masculino',
     atleta_fecha_nacimiento: '',
@@ -81,6 +80,12 @@ export default function RegisterRepresentanteForm({
   const computedAge = calculateAgeFromBirthDate(form.atleta_fecha_nacimiento);
   const recommendedCategory = recommendCategoryNameForAge(computedAge, false);
   const passwordCheck = evaluatePasswordSemaforo(form.password);
+
+  // Tarifa oficial según categoría y edad asignada:
+  // Menor (0 - 17 años): 10€
+  // Mayor (>= 18 años): 15€
+  const tarifaMatricula = computedAge !== null && computedAge >= 18 ? 15 : 10;
+  const montoBsInscripcion = calcPriceBs(tarifaMatricula, tasa);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0] || null;
@@ -130,6 +135,17 @@ export default function RegisterRepresentanteForm({
       return;
     }
 
+    const docTipo = form.atleta_doc_tipo || 'V';
+    const docNum = (form.atleta_doc_num || '').trim().replace(/\s+/g, '');
+    const docFinal = docNum
+      ? (docTipo === 'PN' ? `PN:${docNum}` : `${docTipo}-${docNum}`)
+      : form.atleta_dni.trim();
+
+    if (!docFinal) {
+      if (onError) onError('Debes ingresar la Cédula o Código de Partida de Nacimiento del atleta.');
+      return;
+    }
+
     if (!form.foto_perfil) {
       if (onError) onError('Debes adjuntar la fotografía de perfil del atleta menor.');
       return;
@@ -152,7 +168,7 @@ export default function RegisterRepresentanteForm({
       formData.append('password', form.password);
 
       formData.append('atleta_nombre_completo', form.atleta_nombre_completo.trim());
-      formData.append('atleta_dni', form.atleta_dni.trim());
+      formData.append('atleta_dni', docFinal);
       formData.append('atleta_genero', form.atleta_genero);
       formData.append('atleta_fecha_nacimiento', form.atleta_fecha_nacimiento);
       formData.append('estatura', form.estatura);
@@ -331,19 +347,57 @@ export default function RegisterRepresentanteForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className="block text-xs font-semibold text-texto-secundario mb-1">
                 Cédula / Partida Nac.*
               </label>
-              <input
-                type="text"
-                className="input-fenix"
-                placeholder="V-32123456"
-                value={form.atleta_dni}
-                onChange={(e) => setForm({ ...form, atleta_dni: e.target.value })}
-                required
-              />
+              <div className="flex gap-1.5">
+                <select
+                  className="input-fenix w-28 shrink-0 text-xs font-bold"
+                  value={form.atleta_doc_tipo || 'V'}
+                  onChange={(e) => {
+                    const tipo = e.target.value;
+                    const num = form.atleta_doc_num || '';
+                    setForm({
+                      ...form,
+                      atleta_doc_tipo: tipo,
+                      atleta_dni: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
+                    });
+                  }}
+                >
+                  <option value="V">V- (Ven.)</option>
+                  <option value="E">E- (Ext.)</option>
+                  <option value="PN">PN: (Partida)</option>
+                </select>
+                <input
+                  type="text"
+                  className="input-fenix flex-1 min-w-0 text-xs"
+                  placeholder={
+                    form.atleta_doc_tipo === 'PN'
+                      ? 'Nº Acta o Código Partida'
+                      : form.atleta_doc_tipo === 'E'
+                      ? 'Ej: 84123456'
+                      : 'Ej: 32123456'
+                  }
+                  value={form.atleta_doc_num || ''}
+                  onChange={(e) => {
+                    const num = e.target.value.replace(/\s+/g, '');
+                    const tipo = form.atleta_doc_tipo || 'V';
+                    setForm({
+                      ...form,
+                      atleta_doc_num: num,
+                      atleta_dni: num ? (tipo === 'PN' ? `PN:${num}` : `${tipo}-${num}`) : '',
+                    });
+                  }}
+                  required
+                />
+              </div>
+              {form.atleta_doc_tipo === 'PN' && (
+                <p className="text-[10px] text-amber-400/90 mt-1">
+                  *Para menores de 9 años sin cédula. Podrás actualizar a Cédula (V/E) en cualquier momento desde el Portal.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-texto-secundario mb-1">
@@ -382,9 +436,13 @@ export default function RegisterRepresentanteForm({
             </label>
             <div className="input-fenix bg-neutral-900/80 border-dashed text-xs flex items-center justify-between">
               <span className="font-bold text-amber-300">
-                {recommendedCategory ? `${recommendedCategory} (${computedAge} años)` : 'Ingresa la fecha de nacimiento'}
+                {recommendedCategory
+                  ? `${recommendedCategory} (${computedAge} años) • Matrícula: ${tarifaMatricula}€`
+                  : 'Ingresa la fecha de nacimiento'}
               </span>
-              <span className="text-[10px] text-texto-secundario">Regla Fénix</span>
+              <span className="text-[10px] text-verde-neon font-semibold">
+                {computedAge !== null ? `${tarifaMatricula}€` : 'Regla Fénix'}
+              </span>
             </div>
           </div>
         </div>
@@ -570,23 +628,17 @@ export default function RegisterRepresentanteForm({
 
       {/* 3. SECCIÓN: MATRÍCULA DE INSCRIPCIÓN Y COMPROBANTE (EXCLUSIVAMENTE EN BOLÍVARES) */}
       <div className="card-fenix p-4 sm:p-5 border-l-4 border-l-dorado-fenix space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-800 pb-2">
-          <div className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-dorado-fenix" />
-            <h3 className="font-display text-base font-bold text-white uppercase tracking-wider">
-              3. Matrícula de Inscripción Oficial
-            </h3>
-          </div>
-
-          <div className="text-right">
-            <span className="text-[10px] text-texto-secundario block">Monto a pagar en Bolívares:</span>
-            <span className="font-display text-xl sm:text-2xl font-extrabold text-white">
-              {formatBs(montoBsInscripcion)}
-            </span>
-          </div>
+        <div className="flex items-center gap-2 border-b border-neutral-800 pb-2">
+          <CreditCard className="w-4 h-4 text-dorado-fenix" />
+          <h3 className="font-display text-base font-bold text-white uppercase tracking-wider">
+            3. Matrícula de Inscripción Oficial
+          </h3>
         </div>
 
-        <PaymentMethodsBox />
+        <PaymentMethodsBox
+          amount={tarifaMatricula}
+          concept={`Inscripción ${recommendedCategory ? `${recommendedCategory} (${computedAge || 0} años)` : 'Atleta'} - ${form.disciplina}`}
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>

@@ -667,6 +667,14 @@ const updatePlayerSizes = async (idJugador, { talla_camiseta, talla_short, talla
   return rows[0];
 };
 
+const updatePlayerDocument = async (idJugador, dniCedula) => {
+  const { rows } = await pool.query(
+    `UPDATE jugadores SET dni_cedula = $1 WHERE id_jugador = $2 RETURNING *`,
+    [String(dniCedula).trim(), Number(idJugador)]
+  );
+  return rows[0];
+};
+
 module.exports = {
   getPlayersList,
   getPlayerById,
@@ -682,4 +690,5 @@ module.exports = {
   updatePlayerConvocatoria,
   upsertTrainingConfirmation,
   updatePlayerSizes,
+  updatePlayerDocument,
 };

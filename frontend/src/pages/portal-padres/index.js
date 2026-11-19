@@ -39,6 +39,70 @@ export default function PortalPadres() {
   const [busyTrainingId, setBusyTrainingId] = useState(null);
   const [busyQuickMatch, setBusyQuickMatch] = useState(false);
 
+  // Estado para modal de actualización de documento (Cédula / Partida)
+  const [docModalOpen, setDocModalOpen] = useState(false);
+  const [docTipo, setDocTipo] = useState('V');
+  const [docNum, setDocNum] = useState('');
+  const [docSubmitting, setDocSubmitting] = useState(false);
+  const [docError, setDocError] = useState('');
+
+  const handleOpenDocModal = (player) => {
+    if (!player) return;
+    const raw = (player.dni_cedula || '').trim();
+    let tipo = 'V';
+    let num = raw;
+    if (raw.startsWith('PN:')) {
+      tipo = 'PN';
+      num = raw.slice(3);
+    } else if (raw.startsWith('PN-')) {
+      tipo = 'PN';
+      num = raw.slice(3);
+    } else if (raw.startsWith('E-')) {
+      tipo = 'E';
+      num = raw.slice(2);
+    } else if (raw.startsWith('V-')) {
+      tipo = 'V';
+      num = raw.slice(2);
+    }
+    setDocTipo(tipo);
+    setDocNum(num);
+    setDocError('');
+    setDocModalOpen(true);
+  };
+
+  const handleSaveDoc = async (e) => {
+    e.preventDefault();
+    const activeCurrent = dossier?.player || players.find((p) => p.id_jugador === selectedPlayerId);
+    if (!activeCurrent) return;
+    const cleanNum = (docNum || '').trim().replace(/\s+/g, '');
+    if (!cleanNum) {
+      setDocError('Ingresa el número de cédula o código de partida de nacimiento.');
+      return;
+    }
+    const finalDoc = docTipo === 'PN' ? `PN:${cleanNum}` : `${docTipo}-${cleanNum}`;
+    setDocSubmitting(true);
+    setDocError('');
+    try {
+      await api.patch(`/players/${activeCurrent.id_jugador}/documento`, { dni_cedula: finalDoc });
+      setPlayers((prev) =>
+        prev.map((p) => (p.id_jugador === activeCurrent.id_jugador ? { ...p, dni_cedula: finalDoc } : p))
+      );
+      if (dossier?.player) {
+        setDossier((prev) => ({
+          ...prev,
+          player: { ...prev.player, dni_cedula: finalDoc },
+        }));
+      }
+      setFeedbackMsg(`Documento de identidad actualizado exitosamente a: ${finalDoc}`);
+      setDocModalOpen(false);
+      setTimeout(() => setFeedbackMsg(''), 5000);
+    } catch (err) {
+      setDocError(err.response?.data?.error || 'No se pudo actualizar el documento.');
+    } finally {
+      setDocSubmitting(false);
+    }
+  };
+
   const loadPlayersAndCategories = useCallback(async () => {
     try {
       const [playersRes, catRes, notifRes] = await Promise.all([
@@ -132,10 +196,23 @@ export default function PortalPadres() {
                   : 'Registro de Nuevo Atleta'}
               </h1>
               {activePlayer && (
-                <p className="text-xs text-texto-secundario">
-                  {activePlayer.categoria_disciplina ? `${activePlayer.categoria_disciplina} • ` : ''}
-                  {activePlayer.categoria_nombre} ({activePlayer.categoria_modalidad}) • Dorsal #{activePlayer.dorsal || 'S/N'} • {activePlayer.posicion_habitual}
-                </p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-texto-secundario mt-1">
+                  <span>{activePlayer.categoria_disciplina ? `${activePlayer.categoria_disciplina} • ` : ''}</span>
+                  <span>{activePlayer.categoria_nombre} ({activePlayer.categoria_modalidad})</span>
+                  <span>• Dorsal #{activePlayer.dorsal || 'S/N'}</span>
+                  <span>• {activePlayer.posicion_habitual}</span>
+                  <div className="inline-flex items-center gap-1.5 ml-1 bg-black/60 px-2 py-0.5 rounded border border-neutral-700 text-amber-300 font-mono text-[11px]">
+                    <span>Doc: {activePlayer.dni_cedula || 'N/D'}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenDocModal(activePlayer)}
+                      className="text-xs hover:text-white transition ml-1 text-rojo-fuego hover:underline font-sans font-bold flex items-center gap-0.5"
+                      title="Editar Cédula o cambiar Partida de Nacimiento a Cédula"
+                    >
+                      ✏️ {activePlayer.dni_cedula?.startsWith('PN') ? 'Pasar a Cédula' : 'Modificar'}
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -570,6 +647,97 @@ export default function PortalPadres() {
               setActiveTab('pagos');
             }}
           />
+        )}
+
+        {/* Modal Modificar Documento / Cédula */}
+        {docModalOpen && activePlayer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="card-fenix w-full max-w-md p-6 border-l-4 border-l-amber-400 space-y-4 shadow-2xl relative">
+              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                <h3 className="font-display text-lg font-bold text-white flex items-center gap-2">
+                  <span className="text-amber-400">🪪</span> Actualizar Documento de Identidad
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setDocModalOpen(false)}
+                  className="text-neutral-400 hover:text-white text-lg font-bold px-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="text-xs text-texto-secundario">
+                Actualiza el documento oficial de <strong>{activePlayer.nombre} {activePlayer.apellido}</strong>. Si el menor ya obtuvo su Cédula, puedes cambiar de Partida de Nacimiento (PN) a Cédula (V / E).
+              </p>
+
+              {docError && (
+                <div className="bg-red-950/60 border border-red-500/60 text-red-200 p-2.5 rounded text-xs">
+                  {docError}
+                </div>
+              )}
+
+              <form onSubmit={handleSaveDoc} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-texto-secundario mb-1">
+                    Tipo y Número de Documento*
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      className="input-fenix w-32 shrink-0 font-bold text-xs"
+                      value={docTipo}
+                      onChange={(e) => setDocTipo(e.target.value)}
+                    >
+                      <option value="V">V- (Ven.)</option>
+                      <option value="E">E- (Ext.)</option>
+                      <option value="PN">PN: (Partida)</option>
+                    </select>
+                    <input
+                      type="text"
+                      className="input-fenix flex-1 min-w-0 text-xs font-mono font-bold"
+                      value={docNum}
+                      onChange={(e) => setDocNum(e.target.value.replace(/\s+/g, ''))}
+                      placeholder={
+                        docTipo === 'PN'
+                          ? 'Nº Acta o Código Partida'
+                          : docTipo === 'E'
+                          ? 'Ej: 84123456'
+                          : 'Ej: 32123456'
+                      }
+                      required
+                    />
+                  </div>
+                  {docTipo === 'PN' && (
+                    <p className="text-[10px] text-amber-400/90 mt-1">
+                      *Código de Partida de Nacimiento para menores de 9 años sin cédula.
+                    </p>
+                  )}
+                  {docTipo !== 'PN' && (
+                    <p className="text-[10px] text-green-400 mt-1">
+                      *Cédula de Identidad Oficial (Cédula venezolana o extranjera).
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-800">
+                  <button
+                    type="button"
+                    onClick={() => setDocModalOpen(false)}
+                    className="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-neutral-300"
+                    disabled={docSubmitting}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-cta text-xs font-bold"
+                    disabled={docSubmitting}
+                  >
+                    {docSubmitting ? 'Guardando...' : 'Guardar Documento'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </main>
 
