@@ -362,6 +362,7 @@ const createMinorWithRepresentativeUser = async ({
       )
       VALUES ($1, $2, TRUE, TRUE, $3)`,
       [player.id_jugador, rep.id_representante, repNombre]
+    );
     // Calcular tarifa de inscripción oficial: Menor 0-17 años: 10€, Mayor >=18 años: 15€
     let edadAtleta = null;
     if (atletaFechaNacimiento) {

@@ -5,7 +5,18 @@ const categoriasModel = require('../categorias/categorias.model');
 
 exports.getAttendance = async (req, res) => {
   const fecha = req.query.fecha || new Date().toISOString().slice(0, 10);
-  const idCategoria = req.query.id_categoria ? Number(req.query.id_categoria) : null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    return res.status(400).json({ error: 'Formato de fecha inválido (YYYY-MM-DD).' });
+  }
+
+  let idCategoria = null;
+  if (req.query.id_categoria !== undefined && req.query.id_categoria !== null && req.query.id_categoria !== '') {
+    idCategoria = Number(req.query.id_categoria);
+    if (isNaN(idCategoria) || idCategoria <= 0) {
+      return res.status(400).json({ error: 'Parámetro id_categoria debe ser un entero positivo válido.' });
+    }
+  }
+
   const tipoSesion = req.query.tipo_sesion === 'Juego' ? 'Juego' : 'Entrenamiento';
 
   try {
@@ -29,8 +40,9 @@ exports.getAttendance = async (req, res) => {
 
 exports.recordAttendance = async (req, res) => {
   const { id_jugador, id_categoria, fecha, tipo_sesion, cuadrante, action, observaciones } = req.body;
-  if (!id_jugador || !action) {
-    return res.status(400).json({ error: 'Jugador y acción de asistencia requeridos.' });
+  const numJugador = Number(id_jugador);
+  if (!numJugador || isNaN(numJugador) || !action) {
+    return res.status(400).json({ error: 'Jugador y acción de asistencia válidos requeridos.' });
   }
 
   try {

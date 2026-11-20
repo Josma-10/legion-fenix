@@ -11,10 +11,14 @@ import {
   Save,
   X,
   CheckCircle2,
+  Sparkles,
+  ArrowLeft,
+  Tv,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
-import MicrociclosModule from '../../modules/entrenadores/MicrociclosModule';
-import Trabajos3DSchedulerModule from '../../modules/entrenadores/Trabajos3DSchedulerModule';
+import PlanificacionCampoModule from '../../modules/entrenadores/PlanificacionCampoModule';
+import EjerciciosBibliotecaModule from '../../modules/entrenadores/EjerciciosBibliotecaModule';
+import VideoconferenciaFenixModule from '../../modules/comun/VideoconferenciaFenixModule';
 import TacticalSimulatorModule from '../../modules/entrenadores/TacticalSimulatorModule';
 import EvaluacionJugadorModule from '../../modules/entrenadores/EvaluacionJugadorModule';
 import CoachLesionesModule from '../../modules/entrenadores/CoachLesionesModule';
@@ -26,22 +30,28 @@ import { groupCategoriesByDiscipline } from '../../utils/categories';
 
 const SUBMODULES = [
   {
-    key: 'microciclos',
-    label: 'Microciclos',
-    desc: '3 Bloques semanales',
+    key: 'planificacion',
+    label: 'Planificación & Campo',
+    desc: 'Microciclos y Sesiones',
     icon: ClipboardList,
   },
   {
-    key: 'trabajos3d',
-    label: 'Trabajo en Cancha',
-    desc: 'Hora, espacio y modalidad',
-    icon: Box,
+    key: 'ejercicios',
+    label: 'Biblioteca Tareas 2D',
+    desc: '100+ Tareas y Ejercicios',
+    icon: Sparkles,
   },
   {
     key: 'simulador',
     label: 'Tabla de Juego 2D',
     desc: 'Pizarra táctica y ejercicios',
     icon: Crosshair,
+  },
+  {
+    key: 'videollamada',
+    label: 'Aula Virtual & Videollamada',
+    desc: 'Clases remotas y charlas',
+    icon: Video,
   },
   {
     key: 'evaluacion',
@@ -59,7 +69,7 @@ const SUBMODULES = [
     key: 'videos',
     label: 'Videoteca Análisis',
     desc: 'YouTube y clips',
-    icon: Video,
+    icon: Tv,
   },
   {
     key: 'plantilla',
@@ -71,7 +81,7 @@ const SUBMODULES = [
 
 export default function PortalCoach() {
   const { user, checking } = useAuthGuard(['ENTRENADOR']);
-  const [activeTab, setActiveTab] = useState('microciclos');
+  const [activeTab, setActiveTab] = useState('planificacion');
   const [selectedTrabajoForBoard, setSelectedTrabajoForBoard] = useState(null);
   const [dashboard, setDashboard] = useState({
     tacticas: [],
@@ -165,6 +175,26 @@ export default function PortalCoach() {
       <Navbar subtitle="Portal de Entrenadores y Metodología • Gesdep Hub" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 w-full flex-1">
+        {/* Barra de Retorno y Navegación Rápida */}
+        <div className="flex items-center justify-between pb-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                if (window.history.length > 1) window.history.back();
+                else window.location.href = '/';
+              }
+            }}
+            className="inline-flex items-center gap-2 text-xs font-bold text-neutral-300 hover:text-white transition px-3 py-1.5 rounded-lg bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4 text-rojo-fuego" />
+            Volver a la página anterior
+          </button>
+          <span className="text-[11px] text-neutral-500 font-mono hidden sm:inline">
+            Panel Técnico Oficial • Legión Fénix FC
+          </span>
+        </div>
+
         {/* Cabecera Principal Institucional */}
         <div className="card-fenix p-5 border-l-4 border-l-rojo-fuego flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -303,8 +333,9 @@ export default function PortalCoach() {
 
               // Conteos dinámicos en badges
               let badgeCount = null;
-              if (sub.key === 'microciclos') badgeCount = dashboard.microciclos?.length || null;
-              if (sub.key === 'trabajos3d') badgeCount = dashboard.trabajos?.length || null;
+              if (sub.key === 'planificacion') badgeCount = (dashboard.microciclos?.length || 0) + (dashboard.trabajos?.length || 0) || null;
+              if (sub.key === 'ejercicios') badgeCount = '100+';
+              if (sub.key === 'videollamada') badgeCount = 'Live';
               if (sub.key === 'simulador') badgeCount = dashboard.tacticas?.length || null;
               if (sub.key === 'evaluacion') badgeCount = dashboard.evaluaciones?.length || null;
               if (sub.key === 'lesiones') badgeCount = lesionadosCount > 0 ? lesionadosCount : null;
@@ -345,25 +376,34 @@ export default function PortalCoach() {
           </div>
         </div>
 
-        {activeTab === 'microciclos' && (
-          <MicrociclosModule
-            microciclos={dashboard.microciclos}
+        {activeTab === 'planificacion' && (
+          <PlanificacionCampoModule
+            microciclos={dashboard.microciclos || []}
+            trabajos={dashboard.trabajos || []}
             categories={dashboard.categories}
-            onReload={loadDashboard}
-          />
-        )}
-
-        {activeTab === 'trabajos3d' && (
-          <Trabajos3DSchedulerModule
-            mode="ENTRENADOR"
-            categories={dashboard.categories}
-            players={dashboard.players}
+            players={dashboard.players || []}
             isAdmin={user?.rol === 'ADMINISTRADOR'}
             onReloadDashboard={loadDashboard}
             onOpenInTacticalBoard={(job) => {
               setSelectedTrabajoForBoard(job.id_trabajo);
               setActiveTab('simulador');
             }}
+          />
+        )}
+
+        {activeTab === 'ejercicios' && (
+          <EjerciciosBibliotecaModule
+            categories={dashboard.categories}
+            onOpenInTacticalSimulator={(exercise) => {
+              setActiveTab('simulador');
+            }}
+          />
+        )}
+
+        {activeTab === 'videollamada' && (
+          <VideoconferenciaFenixModule
+            userRole={user?.rol || 'ENTRENADOR'}
+            userName={user?.nombre || 'Profesor Legión Fénix'}
           />
         )}
 

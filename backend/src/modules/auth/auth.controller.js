@@ -58,6 +58,10 @@ exports.login = async (req, res) => {
     return res.status(400).json({ error: 'Usuario/email y contraseña requeridos.' });
   }
 
+  if (typeof username !== 'string' || typeof password !== 'string' || username.length > 100 || password.length > 100) {
+    return res.status(400).json({ error: 'Formato o longitud de credenciales inválida.' });
+  }
+
   if (/\s/.test(username) || /\s/.test(password)) {
     return res.status(400).json({ error: 'No se permiten espacios en blanco en el usuario ni en la contraseña.' });
   }

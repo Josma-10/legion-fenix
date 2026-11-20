@@ -12,12 +12,17 @@ import {
   Globe,
   Calendar,
   Upload,
+  Radio,
+  ExternalLink,
+  Flame,
+  Settings,
+  Tv,
 } from 'lucide-react';
 import api from '../../utils/api';
 
 function extractYoutubeEmbedUrl(url) {
   if (!url) return null;
-  const regExp = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/;
+  const regExp = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/;
   const match = String(url).match(regExp);
   if (match && match[1]) {
     return `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
@@ -38,7 +43,7 @@ const SOCIAL_CHANNELS = [
   {
     name: 'TikTok Legión Fénix',
     handle: '@legionfenixfc',
-    desc: 'Retos técnicos, jugadas en cancha y detrás de cámaras.',
+    desc: 'Transmisiones en vivo, jugadas en cancha y tras bastidores.',
     href: 'https://www.tiktok.com/@legionfenixfc',
     colorClass: 'border-cyan-500/40 hover:border-cyan-400 bg-gradient-to-br from-cyan-950/30 to-[#141414]',
     badgeClass: 'text-cyan-400',
@@ -47,7 +52,7 @@ const SOCIAL_CHANNELS = [
   {
     name: 'YouTube Oficial',
     handle: 'Legión Fénix FC TV',
-    desc: 'Resúmenes completos de juegos, torneos y análisis táctico.',
+    desc: 'Partidos en vivo, resúmenes completos y transmisiones HD.',
     href: 'https://www.youtube.com/@LegionFenixFC',
     colorClass: 'border-red-500/40 hover:border-red-400 bg-gradient-to-br from-red-950/30 to-[#141414]',
     badgeClass: 'text-rojo-fuego',
@@ -71,10 +76,21 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
   const [canPublish, setCanPublish] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
+  // Estado de Transmisión en Vivo (TikTok Live / YouTube Live)
+  const [liveConfig, setLiveConfig] = useState({
+    active: true,
+    titulo: 'Partido Oficial en Directo: Legión Fénix Sub-16 vs UCV FC',
+    categoria: 'Sub-16 & Juveniles',
+    plataforma: 'TikTok',
+    url: 'https://www.tiktok.com/@legionfenixfc/live',
+    estado: 'En Vivo',
+  });
+  const [showLiveSettings, setShowLiveSettings] = useState(false);
+
   const [form, setForm] = useState({
     titulo: '',
     descripcion: '',
-    tipo: 'Foto',
+    tipo: 'Video',
     categoria_evento: 'Juego',
     media_url: '',
     fecha_evento: new Date().toISOString().slice(0, 10),
@@ -93,10 +109,22 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
           setCanPublish(true);
         }
       }
+      const savedLive = localStorage.getItem('legion_live_config');
+      if (savedLive) {
+        setLiveConfig(JSON.parse(savedLive));
+      }
     } catch {
       setCanPublish(false);
     }
   }, []);
+
+  const handleSaveLiveSettings = (e) => {
+    e.preventDefault();
+    localStorage.setItem('legion_live_config', JSON.stringify(liveConfig));
+    setShowLiveSettings(false);
+    setFeedback('Configuración del en vivo actualizada.');
+    setTimeout(() => setFeedback(''), 3000);
+  };
 
   const filteredGallery = gallery.filter((item) => {
     const okTipo = tipoFilter === 'Todos' || item.tipo === tipoFilter;
@@ -130,7 +158,7 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
       setForm({
         titulo: '',
         descripcion: '',
-        tipo: 'Foto',
+        tipo: 'Video',
         categoria_evento: 'Juego',
         media_url: '',
         fecha_evento: new Date().toISOString().slice(0, 10),
@@ -146,10 +174,11 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
   };
 
   const youtubeEmbed = selectedItem?.tipo === 'Video' ? extractYoutubeEmbedUrl(selectedItem.media_url) : null;
+  const liveYoutubeEmbed = extractYoutubeEmbedUrl(liveConfig.url);
 
   return (
     <>
-      <section id="hinchada" className="space-y-8">
+      <section id="hinchada" className="space-y-8 animate-fadeIn">
         {/* Encabezado Hinchada */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
@@ -164,16 +193,210 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
             </p>
           </div>
 
-          {canPublish && (
-            <button
-              type="button"
-              onClick={() => setShowForm((v) => !v)}
-              className="btn-cta text-xs py-2.5 px-4 flex items-center gap-2 self-start md:self-auto"
-            >
-              <Plus className="w-4 h-4" /> {showForm ? 'Cerrar Formulario' : 'Subir Foto / Video'}
-            </button>
-          )}
+          <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
+            {canPublish && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowLiveSettings((v) => !v)}
+                  className="px-3.5 py-2.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs font-bold text-white inline-flex items-center gap-2 transition"
+                >
+                  <Settings className="w-4 h-4 text-amber-400" />
+                  Configurar En Vivo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm((v) => !v)}
+                  className="btn-cta text-xs py-2.5 px-4 flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> {showForm ? 'Cerrar Formulario' : 'Cargar Foto / Video / Jugada'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* BANNER OFICIAL DE TRANSMISIÓN EN VIVO (FÉNIX TV LIVE) */}
+        {liveConfig.active && (
+          <div className="card-fenix overflow-hidden border-2 border-rojo-fuego shadow-2xl relative">
+            <div className="bg-gradient-to-r from-vinotinto via-[#5c0017] to-negro-tarjeta p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[11px] font-extrabold uppercase tracking-widest shadow-md">
+                    <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                    🔴 EN VIVO AHORA
+                  </span>
+                  <span className="text-xs text-amber-300 font-bold uppercase tracking-wider">
+                    Fénix TV • {liveConfig.plataforma}
+                  </span>
+                </div>
+                <h3 className="font-display text-xl sm:text-2xl font-extrabold text-white">
+                  {liveConfig.titulo}
+                </h3>
+                <p className="text-xs text-neutral-300">
+                  Transmitiendo señal en directo para toda la hinchada y comunidad de Legión Fénix FC ({liveConfig.categoria}).
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <a
+                  href={liveConfig.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-cta text-xs py-2.5 px-5 inline-flex items-center gap-2 font-extrabold shadow-fuego"
+                >
+                  <Tv className="w-4 h-4" />
+                  Ver en {liveConfig.plataforma}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+
+            {/* Reproductor Embebido si es YouTube o Contenedor Visual si es TikTok */}
+            <div className="bg-black/90 p-2 sm:p-4 flex items-center justify-center">
+              {liveYoutubeEmbed ? (
+                <div className="w-full max-w-4xl h-[380px] sm:h-[460px] rounded-xl overflow-hidden border border-neutral-800 shadow-2xl">
+                  <iframe
+                    src={liveYoutubeEmbed}
+                    title="Transmisión en Vivo Legión Fénix FC"
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <div className="w-full max-w-3xl p-8 rounded-xl bg-gradient-to-br from-[#121218] to-black border border-neutral-800 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-400 flex items-center justify-center mx-auto shadow-lg animate-pulse">
+                    <Share2 className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h4 className="font-display text-xl font-bold text-white">
+                      Transmisión Activa en TikTok Live Oficial
+                    </h4>
+                    <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1">
+                      Conéctate al Live en TikTok desde tu teléfono o computadora para disfrutar la narración, interactuar con el chat y alentar al equipo en vivo.
+                    </p>
+                  </div>
+                  <a
+                    href={liveConfig.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-pink-600 hover:from-cyan-500 hover:to-pink-500 text-white font-extrabold text-xs transition shadow-lg"
+                  >
+                    Abrir TikTok Live @legionfenixfc
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Configuración del En Vivo (Admin / Entrenador) */}
+        {showLiveSettings && canPublish && (
+          <div
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowLiveSettings(false)}
+          >
+            <form
+              onSubmit={handleSaveLiveSettings}
+              onClick={(e) => e.stopPropagation()}
+              className="card-fenix max-w-lg w-full p-6 border-rojo-fuego space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
+                  <Radio className="w-5 h-5 text-rojo-fuego" />
+                  CONFIGURAR TRANSMISIÓN EN VIVO (LIVE)
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowLiveSettings(false)}
+                  className="text-neutral-400 hover:text-white text-xs font-bold"
+                >
+                  Cerrar
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-[#141419] border border-neutral-800">
+                  <span className="font-bold text-white">¿Activar Señal en Vivo?</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={liveConfig.active}
+                      onChange={(e) => setLiveConfig({ ...liveConfig, active: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rojo-fuego" />
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-texto-secundario mb-1">Título del Partido / Transmisión*</label>
+                  <input
+                    type="text"
+                    className="input-fenix"
+                    placeholder="Ej: Final Torneo Clausura Fénix FC vs Caracas SC"
+                    value={liveConfig.titulo}
+                    onChange={(e) => setLiveConfig({ ...liveConfig, titulo: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-texto-secundario mb-1">Plataforma*</label>
+                    <select
+                      className="input-fenix"
+                      value={liveConfig.plataforma}
+                      onChange={(e) => setLiveConfig({ ...liveConfig, plataforma: e.target.value })}
+                    >
+                      <option value="TikTok">TikTok Live</option>
+                      <option value="YouTube">YouTube Live</option>
+                      <option value="Twitch">Twitch</option>
+                      <option value="Facebook">Facebook Live</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-texto-secundario mb-1">Categoría</label>
+                    <input
+                      type="text"
+                      className="input-fenix"
+                      placeholder="Ej: Sub-16, Libre..."
+                      value={liveConfig.categoria}
+                      onChange={(e) => setLiveConfig({ ...liveConfig, categoria: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-texto-secundario mb-1">Enlace del Live / Stream URL*</label>
+                  <input
+                    type="text"
+                    className="input-fenix font-mono"
+                    placeholder="https://www.tiktok.com/@legionfenixfc/live o https://youtube.com/live/..."
+                    value={liveConfig.url}
+                    onChange={(e) => setLiveConfig({ ...liveConfig, url: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => setShowLiveSettings(false)}
+                  className="px-4 py-2 rounded bg-neutral-800 text-white text-xs font-bold"
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-cta text-xs py-2 px-5 font-bold">
+                  Guardar Configuración Live
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {feedback && (
           <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-200">
@@ -186,11 +409,11 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
           </div>
         )}
 
-        {/* Formulario para Entrenador / Admin / Analista */}
+        {/* Formulario para Subir Fotos / Videos de Partidos o Entrenamientos */}
         {canPublish && showForm && (
           <form onSubmit={handleUpload} className="card-fenix p-5 border-vinotinto/60 space-y-4">
             <h3 className="font-bold text-white text-sm uppercase tracking-wider flex items-center gap-2">
-              <Upload className="w-4 h-4 text-rojo-fuego" /> Publicar Nuevo Material en Galería Hinchada
+              <Upload className="w-4 h-4 text-rojo-fuego" /> Cargar Resumen de Juego, Clip o Fotografía
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <input
@@ -206,15 +429,15 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
                 value={form.tipo}
                 onChange={(e) => setForm({ ...form, tipo: e.target.value })}
               >
+                <option value="Video">Tipo: Video / Jugada</option>
                 <option value="Foto">Tipo: Foto</option>
-                <option value="Video">Tipo: Video</option>
               </select>
               <select
                 className="input-fenix"
                 value={form.categoria_evento}
                 onChange={(e) => setForm({ ...form, categoria_evento: e.target.value })}
               >
-                <option value="Juego">Momento: Juego</option>
+                <option value="Juego">Momento: Juego Oficial</option>
                 <option value="Entrenamiento">Momento: Entrenamiento</option>
               </select>
               <input
@@ -226,7 +449,7 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
               <input
                 type="text"
                 className="input-fenix sm:col-span-2"
-                placeholder="URL de imagen o enlace de YouTube/video (opcional si subes archivo)"
+                placeholder="URL de YouTube/TikTok/Drive (opcional si subes archivo directamente)"
                 value={form.media_url}
                 onChange={(e) => setForm({ ...form, media_url: e.target.value })}
               />
@@ -235,7 +458,7 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
               <input
                 type="text"
                 className="input-fenix"
-                placeholder="Descripción breve del partido o entrenamiento"
+                placeholder="Descripción breve del partido o jugada clave"
                 value={form.descripcion}
                 onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
               />
@@ -348,11 +571,11 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
                     </div>
                   </div>
                   <div className="px-4 pb-4 flex items-center justify-between text-[11px] text-neutral-400">
-                    <span className="inline-flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-rojo-fuego" />
-                      {item.fecha_evento ? String(item.fecha_evento).slice(0, 10) : 'Reciente'}
+                    <span className="flex items-center gap-1 font-mono">
+                      <Calendar className="w-3.5 h-3.5 text-neutral-500" />
+                      {item.fecha_evento ? new Date(item.fecha_evento).toLocaleDateString('es-VE') : 'Reciente'}
                     </span>
-                    <span className="text-rojo-fuego font-bold group-hover:text-white transition">
+                    <span className="text-rojo-fuego font-bold group-hover:translate-x-1 transition flex items-center gap-1">
                       {isVideo ? 'Reproducir video →' : 'Ampliar foto →'}
                     </span>
                   </div>
@@ -362,20 +585,88 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
           </div>
         )}
 
-        {/* REDES SOCIALES OFICIALES DEL EQUIPO */}
-        <div className="card-fenix p-6 sm:p-8 border-vinotinto/50 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <span className="text-xs font-extrabold uppercase tracking-widest text-rojo-fuego inline-flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5" /> Conecta con el Club
-              </span>
-              <h3 className="font-display text-2xl sm:text-3xl font-extrabold text-white mt-0.5">
-                REDES SOCIALES OFICIALES DE LEGIÓN FÉNIX FC
-              </h3>
+        {/* Modal de Vista Detallada de Foto o Video */}
+        {selectedItem && (
+          <div
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setSelectedItem(null)}
+          >
+            <div
+              className="card-fenix max-w-3xl w-full overflow-hidden border-rojo-fuego"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-vinotinto text-white text-[10px] font-bold uppercase">
+                    {selectedItem.tipo} • {selectedItem.categoria_evento}
+                  </span>
+                  <h3 className="font-bold text-white text-base truncate">{selectedItem.titulo}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedItem(null)}
+                  className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="bg-black flex items-center justify-center max-h-[70vh] overflow-hidden">
+                {selectedItem.tipo === 'Video' ? (
+                  youtubeEmbed ? (
+                    <div className="w-full aspect-video">
+                      <iframe
+                        src={youtubeEmbed}
+                        title={selectedItem.titulo}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <video
+                      src={selectedItem.media_url}
+                      controls
+                      autoPlay
+                      className="w-full max-h-[65vh] object-contain"
+                    />
+                  )
+                ) : (
+                  <img
+                    src={selectedItem.media_url}
+                    alt={selectedItem.titulo}
+                    className="w-full max-h-[65vh] object-contain"
+                  />
+                )}
+              </div>
+
+              <div className="p-4 space-y-2">
+                <p className="text-xs text-neutral-300">{selectedItem.descripcion || 'Sin descripción adicional.'}</p>
+                <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-2 border-t border-neutral-800">
+                  <span>Fecha: {selectedItem.fecha_evento ? new Date(selectedItem.fecha_evento).toLocaleDateString('es-VE') : 'N/A'}</span>
+                  <a
+                    href={selectedItem.media_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-400 hover:underline flex items-center gap-1"
+                  >
+                    Ver original <Globe className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
             </div>
-            <span className="text-xs text-texto-secundario">
-              Sigue cada convocatoria, marcador en vivo y jornadas formativas
+          </div>
+        )}
+
+        {/* Canales Oficiales de Redes Sociales */}
+        <div className="pt-6 border-t border-neutral-800">
+          <div className="text-center mb-6">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-dorado-fenix">
+              Comunidad y Redes Oficiales
             </span>
+            <h3 className="font-display text-2xl font-extrabold text-white mt-1">
+              SÍGUENOS EN NUESTROS CANALES DIGITALES
+            </h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -386,77 +677,22 @@ export default function HinchadaMediaSocialModule({ gallery = [], onMediaCreated
                   key={ch.name}
                   href={ch.href}
                   target="_blank"
-                  rel="noopener noreferrer"
-                  className={`rounded-xl border p-4 transition flex flex-col justify-between gap-3 ${ch.colorClass}`}
+                  rel="noreferrer"
+                  className={`card-fenix p-4 border transition hover:-translate-y-1 block ${ch.colorClass}`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-bold text-white text-sm">{ch.name}</p>
-                      <p className={`text-xs font-extrabold mt-0.5 ${ch.badgeClass}`}>{ch.handle}</p>
-                    </div>
-                    <Icon className={`w-5 h-5 shrink-0 ${ch.badgeClass}`} />
+                  <div className="flex items-center justify-between mb-2">
+                    <Icon className={`w-5 h-5 ${ch.badgeClass}`} />
+                    <span className="text-[10px] font-bold text-neutral-400">Canal Oficial</span>
                   </div>
-                  <p className="text-[11px] text-neutral-300 leading-relaxed">{ch.desc}</p>
+                  <h4 className="font-bold text-white text-sm">{ch.name}</h4>
+                  <p className="text-xs text-amber-300 font-mono mt-0.5">{ch.handle}</p>
+                  <p className="text-[11px] text-neutral-400 mt-2">{ch.desc}</p>
                 </a>
               );
             })}
           </div>
         </div>
       </section>
-
-      {/* Modal Visor de Foto o Video */}
-      {selectedItem && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="card-fenix max-w-3xl w-full overflow-hidden border-vinotinto">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-800">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-rojo-fuego">
-                  {selectedItem.tipo} • {selectedItem.categoria_evento}
-                </span>
-                <h3 className="font-bold text-white text-base">{selectedItem.titulo}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedItem(null)}
-                className="p-2 rounded-lg bg-neutral-900 hover:bg-rojo-fuego text-white transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="bg-black flex items-center justify-center max-h-[70vh]">
-              {selectedItem.tipo === 'Video' ? (
-                youtubeEmbed ? (
-                  <iframe
-                    src={youtubeEmbed}
-                    title={selectedItem.titulo}
-                    className="w-full aspect-video"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <video
-                    src={selectedItem.media_url}
-                    controls
-                    autoPlay
-                    className="w-full max-h-[65vh]"
-                  />
-                )
-              ) : (
-                <img
-                  src={selectedItem.media_url}
-                  alt={selectedItem.titulo}
-                  className="max-h-[65vh] w-auto object-contain mx-auto"
-                />
-              )}
-            </div>
-            {selectedItem.descripcion && (
-              <div className="px-5 py-3 text-xs text-neutral-300 border-t border-neutral-800">
-                {selectedItem.descripcion}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </>
   );
 }

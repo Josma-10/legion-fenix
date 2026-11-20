@@ -10,6 +10,7 @@ import {
   Users,
   QrCode,
   Film,
+  ArrowLeft,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import AdminAccesosModulosBanner from '../../modules/admin/AdminAccesosModulosBanner';
@@ -118,6 +119,26 @@ export default function AdminPanel() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6 w-full flex-1">
+        {/* Barra de Retorno y Navegación Rápida */}
+        <div className="flex items-center justify-between pb-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                if (window.history.length > 1) window.history.back();
+                else window.location.href = '/';
+              }
+            }}
+            className="inline-flex items-center gap-2 text-xs font-bold text-neutral-300 hover:text-white transition px-3 py-1.5 rounded-lg bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4 text-rojo-fuego" />
+            Volver a la página anterior
+          </button>
+          <span className="text-[11px] text-neutral-500 font-mono hidden sm:inline">
+            Panel de Control Administrativo • Legión Fénix FC
+          </span>
+        </div>
+
         {/* Cabecera Identificando Rol */}
         <div className="card-fenix p-4 sm:p-5 border-l-4 border-l-rojo-fuego flex flex-wrap items-center justify-between gap-3">
           <div>

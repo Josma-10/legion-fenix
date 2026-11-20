@@ -12,6 +12,8 @@ import {
   Award,
   Clock,
   Inbox,
+  Video,
+  ArrowLeft,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import StatusBadge from '../../components/StatusBadge';
@@ -21,13 +23,14 @@ import PagosSemaforoModule from '../../modules/representantes/PagosSemaforoModul
 import IndumentariaGpsModule from '../../modules/representantes/IndumentariaGpsModule';
 import FichaMedicaViewModule from '../../modules/representantes/FichaMedicaViewModule';
 import StepperRegistroAtleta from '../../modules/representantes/StepperRegistroAtleta';
+import VideoconferenciaFenixModule from '../../modules/comun/VideoconferenciaFenixModule';
 import api from '../../utils/api';
 import { useAuthGuard } from '../../utils/auth';
 import { resolveAssetUrl } from '../../utils/media';
 
 export default function PortalPadres() {
   const { user, checking } = useAuthGuard(['REPRESENTANTE', 'ATLETA']);
-  const [activeTab, setActiveTab] = useState('info'); // info | bandeja | pagos | logistica | medica | registro
+  const [activeTab, setActiveTab] = useState('info'); // info | bandeja | pagos | logistica | medica | registro | videollamada
   const [players, setPlayers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -181,6 +184,26 @@ export default function PortalPadres() {
       <Navbar subtitle="Portal de Representantes y Atletas Mayores" />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6 w-full flex-1">
+        {/* Barra de Retorno y Navegación Rápida */}
+        <div className="flex items-center justify-between pb-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                if (window.history.length > 1) window.history.back();
+                else window.location.href = '/';
+              }
+            }}
+            className="inline-flex items-center gap-2 text-xs font-bold text-neutral-300 hover:text-white transition px-3 py-1.5 rounded-lg bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4 text-rojo-fuego" />
+            Volver a la página anterior
+          </button>
+          <span className="text-[11px] text-neutral-500 font-mono hidden sm:inline">
+            Portal Atletas & Representantes • Legión Fénix FC
+          </span>
+        </div>
+
         {/* Cabecera y Selector de Atleta */}
         <div className="card-fenix p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-l-vinotinto">
           <div className="flex items-center gap-4">
@@ -333,6 +356,19 @@ export default function PortalPadres() {
             >
               <HeartPulse className={`w-4 h-4 shrink-0 ${activeTab === 'medica' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
               <span className="text-xs whitespace-nowrap">Ficha Médica y Podología</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('videollamada')}
+              className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                activeTab === 'videollamada'
+                  ? 'bg-gradient-to-r from-vinotinto via-[#5c0017] to-vinotinto border-rojo-fuego text-white shadow-fenix font-bold'
+                  : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 font-semibold'
+              }`}
+            >
+              <Video className={`w-4 h-4 shrink-0 ${activeTab === 'videollamada' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
+              <span className="text-xs whitespace-nowrap">Aula Virtual & Charlas</span>
             </button>
 
             {user?.rol !== 'ATLETA' && (
@@ -636,6 +672,13 @@ export default function PortalPadres() {
 
         {activeTab === 'medica' && <FichaMedicaViewModule activePlayer={activePlayer} />}
 
+        {activeTab === 'videollamada' && (
+          <VideoconferenciaFenixModule
+            userRole={user?.rol || 'REPRESENTANTE'}
+            userName={user?.nombre || 'Representante Legión Fénix'}
+          />
+        )}
+
         {activeTab === 'registro' && user?.rol !== 'ATLETA' && (
           <StepperRegistroAtleta
             user={user}
@@ -679,29 +722,29 @@ export default function PortalPadres() {
               <form onSubmit={handleSaveDoc} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-texto-secundario mb-1">
-                    Tipo y Número de Documento*
+                    Cédula / Partida de Nacimiento*
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex w-full bg-[#151515] border border-neutral-700 focus-within:border-rojo-fuego focus-within:ring-1 focus-within:ring-rojo-fuego rounded-lg overflow-hidden transition">
                     <select
-                      className="input-fenix w-32 shrink-0 font-bold text-xs"
+                      className="bg-neutral-800 text-white font-bold text-sm px-3 py-2.5 outline-none border-r border-neutral-700 cursor-pointer shrink-0"
                       value={docTipo}
                       onChange={(e) => setDocTipo(e.target.value)}
                     >
-                      <option value="V">V- (Ven.)</option>
-                      <option value="E">E- (Ext.)</option>
-                      <option value="PN">PN: (Partida)</option>
+                      <option value="V">V</option>
+                      <option value="E">E</option>
+                      <option value="PN">PN</option>
                     </select>
                     <input
                       type="text"
-                      className="input-fenix flex-1 min-w-0 text-xs font-mono font-bold"
+                      className="w-full bg-transparent px-3 py-2 text-sm text-white font-mono font-bold outline-none placeholder-neutral-500 min-w-0"
                       value={docNum}
-                      onChange={(e) => setDocNum(e.target.value.replace(/\s+/g, ''))}
+                      onChange={(e) => setDocNum(e.target.value.replace(/\D/g, '').slice(0, 20))}
                       placeholder={
                         docTipo === 'PN'
                           ? 'Nº Acta o Código Partida'
                           : docTipo === 'E'
-                          ? 'Ej: 84123456'
-                          : 'Ej: 32123456'
+                          ? '84123456'
+                          : '32123456'
                       }
                       required
                     />
