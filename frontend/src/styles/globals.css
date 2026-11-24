@@ -188,5 +188,110 @@ img, video {
     padding: 0.875rem 1rem;
     vertical-align: middle;
   }
+
+  /* ======= SISTEMA GENERAL INSTITUCIONAL DEM (CALIDAD5-PRUEBAS) ======= */
+  .dem-container {
+    background-color: #0b0f19;
+  }
+  .dem-card {
+    background: #131926;
+    border: 1px solid #1e293b;
+    border-radius: 0.875rem;
+    transition: all 0.2s ease;
+  }
+  .dem-card:hover {
+    border-color: #2b3a52;
+  }
+  .dem-card-header {
+    padding: 0.875rem 1.25rem;
+    background: rgba(19, 25, 38, 0.85);
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dem-action-card {
+    background: #141c2c;
+    border: 1px solid #1e293b;
+    border-radius: 0.875rem;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+  }
+  .dem-action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.35);
+    border-color: #E11D2E;
+  }
+  .dem-strip-card {
+    background: #131926;
+    border: 1px solid #1e293b;
+    border-radius: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    transition: all 0.2s ease;
+  }
+  .dem-strip-card:hover {
+    border-color: #7A001E;
+    background: #161e2e;
+  }
+  .dem-kpi-card {
+    background: #131926;
+    border: 1px solid #1e293b;
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    transition: all 0.2s ease;
+  }
+  .dem-kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: #7A001E;
+  }
+  .dem-tile {
+    background: #141c2c;
+    border: 1px solid #1e293b;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .dem-tile:hover {
+    background: #182236;
+    border-color: #7A001E;
+    transform: translateY(-1px);
+  }
+  .table-dem {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  .table-dem thead th {
+    background: #0f1422;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #1e293b;
+  }
+  .table-dem tbody tr {
+    border-bottom: 1px solid #182132;
+    transition: background-color 0.15s ease;
+  }
+  .table-dem tbody tr:hover {
+    background-color: rgba(122, 0, 30, 0.08);
+  }
+  .table-dem tbody td {
+    padding: 0.875rem 1rem;
+    vertical-align: middle;
+  }
 }
 
