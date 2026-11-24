@@ -72,7 +72,7 @@ export default function AdminTradingModule({ isAdmin }) {
         osc.frequency.setValueAtTime(783.99, audioCtx.currentTime); // G5
         osc.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.15); // C5
       }
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
 
       osc.start();
@@ -86,7 +86,7 @@ export default function AdminTradingModule({ isAdmin }) {
     try {
       setError('');
       const res = await api.get('/admin/trading/status');
-      if (res.data && res.data.success) {
+      if (res.data?.success) {
         setData(res.data);
         if (!editCapitalBs) setEditCapitalBs(res.data.config.capital_asignado_bs);
         if (!editTasa) setEditTasa(res.data.config.tasa_bs_usdt);
@@ -110,7 +110,7 @@ export default function AdminTradingModule({ isAdmin }) {
     } finally {
       setLoading(false);
     }
-  }, [editCapitalBs, editTasa, adminTelegramId, playAlertSound]);
+  }, [editCapitalBs, editTasa, botToken, adminTelegramId, playAlertSound]);
 
   useEffect(() => {
     fetchStatus();
@@ -144,64 +144,56 @@ export default function AdminTradingModule({ isAdmin }) {
     setAnalyzing(true);
     setError('');
     try {
-      const target = pairToAnalyze || selectedPair;
-      const res = await api.post('/admin/trading/analizar', { symbol: target });
-      if (res.data.success && data) {
-        setData((prev) => ({
-          ...prev,
-          mercado: res.data.analisis,
-        }));
+      const res = await api.post('/admin/trading/analizar', {
+        symbol: pairToAnalyze || selectedPair,
+      });
+      if (res.data.success) {
+        setData((prev) => (prev ? { ...prev, mercado: res.data.analisis } : prev));
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al analizar el mercado.');
+      setError(err.response?.data?.error || 'Error al consultar análisis de mercado.');
     } finally {
       setAnalyzing(false);
     }
   };
 
-  // Guardar Parámetros de Capital y Tasa
+  // Guardar configuración de tasa, capital y telegram
   const handleGuardarConfig = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setActionLoading(true);
     setError('');
     setSuccess('');
     try {
-      const payload = {
-        capital_asignado_bs: Number(editCapitalBs),
+      const res = await api.post('/admin/trading/config', {
         tasa_bs_usdt: Number(editTasa),
+        capital_asignado_bs: Number(editCapitalBs),
         par_activo: selectedPair,
-      };
-      if (botToken) payload.telegram_bot_token = botToken;
-      if (adminTelegramId) payload.telegram_admin_id = adminTelegramId;
-
-      const res = await api.post('/admin/trading/config', payload);
+        telegram_bot_token: botToken,
+        telegram_admin_id: adminTelegramId,
+      });
       if (res.data.success) {
-        setSuccess('Configuración guardada y sincronizada.');
+        setSuccess('Configuración y credenciales guardadas exitosamente.');
         fetchStatus();
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al actualizar configuración.');
+      setError(err.response?.data?.error || 'No se pudo guardar la configuración.');
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Probar Alerta en Telegram
+  // Enviar mensaje de prueba a Telegram
   const handleTestTelegram = async () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
     try {
-      const res = await api.post('/admin/trading/test-telegram', {
-        bot_token: botToken,
-        admin_id: adminTelegramId,
-      });
+      const res = await api.post('/admin/trading/test-telegram');
       if (res.data.success) {
-        setSuccess('¡Alerta de prueba entregada exitosamente a tu Telegram!');
-        fetchStatus();
+        setSuccess(res.data.message);
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'No se pudo enviar la alerta de prueba a Telegram.');
+      setError(err.response?.data?.error || 'No se pudo enviar mensaje de prueba a Telegram.');
     } finally {
       setActionLoading(false);
     }
@@ -236,7 +228,8 @@ export default function AdminTradingModule({ isAdmin }) {
     try {
       const res = await api.post('/admin/trading/notificar-retiro-telegram');
       if (res.data.success) {
-        setSuccess('¡Instrucciones de retiro enviadas directamente a tu chat de Telegram!');
+        setSuccess(res.data.message);
+        setShowRetiroModal(false);
         fetchStatus();
       }
     } catch (err) {
@@ -292,19 +285,19 @@ export default function AdminTradingModule({ isAdmin }) {
 
   if (!isAdmin) {
     return (
-      <div className="card-fenix p-6 text-center text-neutral-400">
-        <ShieldAlert className="w-12 h-12 text-rojo-fuego mx-auto mb-2" />
-        <h3 className="text-lg font-bold text-white">Módulo Exclusivo para Administrador Principal</h3>
-        <p className="text-xs mt-1">No posees los privilegios requeridos para visualizar esta herramienta.</p>
+      <div className="phoenix-card p-8 text-center text-neutral-400">
+        <ShieldAlert className="w-12 h-12 text-rose-500 mx-auto mb-3" />
+        <h3 className="text-base font-bold text-white">Módulo Exclusivo para Administrador Principal</h3>
+        <p className="text-xs text-neutral-400 mt-1">No posees los privilegios requeridos para visualizar esta sección.</p>
       </div>
     );
   }
 
   if (loading && !data) {
     return (
-      <div className="card-fenix p-12 text-center text-neutral-400">
-        <RefreshCw className="w-8 h-8 animate-spin text-rojo-fuego mx-auto mb-2" />
-        <p className="text-xs">Cargando métricas de mercado y motor de trading...</p>
+      <div className="phoenix-card p-12 text-center text-neutral-400">
+        <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
+        <p className="text-xs text-neutral-300">Cargando métricas de tesorería y mercado en tiempo real...</p>
       </div>
     );
   }
@@ -338,191 +331,210 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
 - Modo Simulación (Sandbox) por defecto.`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 animate__animated animate__fadeIn">
       
-      {/* BANNER SUPERIOR CON INDICADOR DE ESTADO & CONTROLES PRINCIPALES */}
-      <div className="card-fenix p-5 border-l-4 border-l-amber-500 flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              Admin Only • FinTech Cuantitativo
-            </span>
+      {/* ENCABEZADO INSTITUCIONAL ESTILO BIENES PÚBLICOS (PHOENIX ADMIN) */}
+      <div className="phoenix-card p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                Tesorería y Monitoreo Financiero
+              </h2>
+              <span className="badge-phoenix bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                Dirección Administrativa
+              </span>
+            </div>
+            <p className="text-xs text-neutral-400">
+              Sistema de Gestión de Liquidez, Alertas Oficiales en Tiempo Real y Retiros a Banco de Venezuela
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Badge de Estado del Sistema */}
+            <div className="badge-phoenix bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+              <span>{config.activo ? 'Sistema Activo' : 'Sistema en Línea'}</span>
+            </div>
+
+            {/* Modalidad Operativa */}
             <span
-              className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider ${
+              className={`badge-phoenix px-3 py-1.5 border ${
                 config.modo_simulacion
-                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
               }`}
             >
-              {config.modo_simulacion ? 'Modo Simulación (Testnet)' : 'Modo Operación Real'}
+              {config.modo_simulacion ? 'Modo Simulación (Testnet)' : 'Operación Real'}
             </span>
+
+            {/* Alternar Sonido */}
             <button
               type="button"
               onClick={() => setSoundEnabled(!soundEnabled)}
               title={soundEnabled ? 'Silenciar alertas sonoras' : 'Activar alertas sonoras'}
-              className="p-1 rounded-lg bg-neutral-800 text-neutral-300 hover:text-white"
+              className="p-2 rounded-lg bg-neutral-800 text-neutral-300 hover:text-white transition"
             >
-              {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5 text-neutral-500" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-neutral-500" />}
+            </button>
+
+            {/* Botón Iniciar / Pausar Motor */}
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={handleToggleMotor}
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition shadow-sm ${
+                config.activo
+                  ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              }`}
+            >
+              {config.activo ? (
+                <>
+                  <Pause className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Pausar Escáner</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 text-white" />
+                  <span>Iniciar Escáner</span>
+                </>
+              )}
+            </button>
+
+            {/* Acciones Rápidas */}
+            <button
+              type="button"
+              onClick={() => setShowRetiroModal(true)}
+              className="px-3 py-2 rounded-lg bg-neutral-800/80 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 text-xs font-medium flex items-center gap-1.5 transition"
+            >
+              <Building2 className="w-3.5 h-3.5 text-blue-400" />
+              <span>Retiro BDV</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowBinanceModal(true)}
+              className="px-3 py-2 rounded-lg bg-neutral-800/80 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 text-xs font-medium flex items-center gap-1.5 transition"
+            >
+              <Key className="w-3.5 h-3.5 text-amber-400" />
+              <span>{binance.conectado ? 'Binance Conectado' : 'Conectar Binance'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowPromptModal(true)}
+              className="px-3 py-2 rounded-lg bg-neutral-800/80 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 text-xs font-medium flex items-center gap-1.5 transition"
+            >
+              <Code2 className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Documentación</span>
             </button>
           </div>
-          <h2 className="font-display text-2xl font-black text-white uppercase italic">
-            Monitor de Flujo de Órdenes & Alertas en Tiempo Real
-          </h2>
-          <p className="text-xs text-neutral-400">
-            Escaneo continuo cada 25s en Binance Spot, conexión directa a carteras y alertas instantáneas a Telegram.
-          </p>
-        </div>
-
-        {/* Botones de Acción Primaria */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={actionLoading}
-            onClick={handleToggleMotor}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition shadow-lg ${
-              config.activo
-                ? 'bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-neutral-700'
-                : 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white hover:brightness-110 border border-emerald-400/40'
-            }`}
-          >
-            {config.activo ? (
-              <>
-                <Pause className="w-4 h-4 text-amber-400" />
-                <span>Pausar Escáner</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 text-white" />
-                <span>Iniciar Escáner Continuo</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowBinanceModal(true)}
-            className="px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-amber-500/50 text-xs font-bold text-neutral-200 flex items-center gap-1.5 transition"
-          >
-            <Key className="w-4 h-4 text-amber-400" />
-            <span>{binance.conectado ? 'Cartera Binance Conectada' : 'Conectar Binance'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowRetiroModal(true)}
-            className="px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-xs font-bold text-neutral-200 flex items-center gap-1.5 transition"
-          >
-            <Building2 className="w-4 h-4 text-amber-400" />
-            <span>Retiro BDV (0102)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowPromptModal(true)}
-            className="px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-xs font-bold text-neutral-200 flex items-center gap-1.5 transition"
-          >
-            <Code2 className="w-4 h-4 text-blue-400" />
-            <span>Prompt Maestro</span>
-          </button>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-950/70 border border-red-600 text-red-200 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
+        <div className="p-3.5 rounded-lg bg-red-950/40 border border-red-500/30 text-red-200 text-xs flex items-center justify-between">
           <span className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" /> {error}
           </span>
-          <button onClick={() => setError('')} className="text-xs underline ml-2">Cerrar</button>
+          <button onClick={() => setError('')} className="text-xs underline hover:text-white">Cerrar</button>
         </div>
       )}
 
       {success && (
-        <div className="bg-emerald-950/70 border border-emerald-600 text-emerald-200 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
+        <div className="p-3.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs flex items-center justify-between">
           <span className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" /> {success}
           </span>
-          <button onClick={() => setSuccess('')} className="text-xs underline ml-2">Cerrar</button>
+          <button onClick={() => setSuccess('')} className="text-xs underline hover:text-white">Cerrar</button>
         </div>
       )}
 
-      {/* METRICAS CLAVE DE CAPITAL & ESTADO OPERATIVO */}
+      {/* KPI METRIC CARDS (ESTILO OFICIAL INICIO.HTML DE BIENES PÚBLICOS) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* Saldo Asignado en Bolívares */}
-        <div className="card-fenix p-4 border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Presupuesto Bs.</span>
-            <Wallet className="w-4 h-4 text-amber-400" />
+        {/* KPI 1: Presupuesto en Bolívares */}
+        <div className="phoenix-kpi">
+          <div className="phoenix-icon-box bg-blue-500/10 text-blue-400">
+            <Wallet className="w-6 h-6" />
           </div>
-          <p className="font-display text-2xl sm:text-3xl font-black text-white mt-1">
-            Bs. {Number(config.capital_asignado_bs || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-          </p>
-          <span className="text-[10px] text-neutral-400 font-semibold block mt-0.5">
-            Tasa: Bs. {Number(config.tasa_bs_usdt || 54.20).toFixed(2)} por USDT
-          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
+              Bs. {Number(config.capital_asignado_bs || 0).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+            </h3>
+            <p className="text-xs text-neutral-400 truncate mt-0.5">
+              Presupuesto Asignado (Tasa: Bs. {Number(config.tasa_bs_usdt || 54.20).toFixed(2)})
+            </p>
+          </div>
         </div>
 
-        {/* Equivalente en USDT & Regla de 5.2 USDT */}
-        <div className="card-fenix p-4 border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Capital en USDT</span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+        {/* KPI 2: Equivalente en USDT */}
+        <div className="phoenix-kpi">
+          <div className="phoenix-icon-box bg-emerald-500/10 text-emerald-400">
+            <DollarSign className="w-6 h-6" />
           </div>
-          <p className="font-display text-2xl sm:text-3xl font-black text-emerald-400 mt-1">
-            ${Number(config.capital_disponible_usdt || 0).toFixed(2)} <span className="text-xs font-sans text-neutral-400 font-normal">USDT</span>
-          </p>
-          <span className={`text-[10px] font-bold block mt-0.5 ${isMinimoBinanceOk ? 'text-emerald-400' : 'text-amber-400'}`}>
-            {isMinimoBinanceOk ? '✓ Cumple mínimo Binance (≥ 5.2 USDT)' : '⚠️ Menor a 5.2 USDT requerido'}
-          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xl sm:text-2xl font-bold text-emerald-400 tracking-tight truncate">
+              ${Number(config.capital_disponible_usdt || 0).toFixed(2)} <span className="text-xs font-normal text-neutral-400">USDT</span>
+            </h3>
+            <p className="text-xs text-neutral-400 truncate mt-0.5">
+              {isMinimoBinanceOk ? 'Mínimo Binance Spot Cumplido' : '⚠️ Menor a 5.2 USDT'}
+            </p>
+          </div>
         </div>
 
-        {/* Estado del Motor Continuo */}
-        <div className="card-fenix p-4 border-l-4 border-l-blue-500">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Escaneo Continuo</span>
-            <Activity className="w-4 h-4 text-blue-400" />
+        {/* KPI 3: Precio Spot Oficial */}
+        <div className="phoenix-kpi">
+          <div className="phoenix-icon-box bg-indigo-500/10 text-indigo-400">
+            <TrendingUp className="w-6 h-6" />
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`w-3 h-3 rounded-full ${config.activo ? 'bg-emerald-400 animate-ping' : 'bg-neutral-600'}`}></span>
-            <span className="font-display text-xl font-bold text-white uppercase">
-              {config.activo ? 'Escaneando Cada 25s' : 'Detenido / En Pausa'}
-            </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
+              ${Number(mercado.precio || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </h3>
+            <p className="text-xs text-neutral-400 truncate mt-0.5 flex items-center gap-1.5">
+              <span className={(mercado.cambio24h || 0) >= 0 ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
+                {(mercado.cambio24h || 0) >= 0 ? '+' : ''}{Number(mercado.cambio24h || 0).toFixed(2)}%
+              </span>
+              <span>• {selectedPair.replace('USDT', '')} Spot</span>
+            </p>
           </div>
-          <span className="text-[10px] text-neutral-400 block mt-0.5">
-            {config.telegram_configured ? 'Alertas Telegram: Activas ✓' : 'Falta configurar Telegram ⚠️'}
-          </span>
         </div>
 
-        {/* Posición Actual / PnL */}
-        <div className="card-fenix p-4 border-l-4 border-l-rojo-fuego">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Posición en Mercado</span>
-            <TrendingUp className="w-4 h-4 text-rojo-fuego" />
+        {/* KPI 4: Estado Operativo */}
+        <div className="phoenix-kpi">
+          <div className="phoenix-icon-box bg-amber-500/10 text-amber-400">
+            <Activity className="w-6 h-6" />
           </div>
-          <p className="font-display text-2xl font-black text-white mt-1">
-            {posicion.abierta ? (
-              <span className="text-amber-400">ABIERTA ({posicion.cantidad_cripto} {selectedPair.replace('USDT', '')})</span>
-            ) : (
-              <span className="text-neutral-400">EN LIQUIDEZ (USDT)</span>
-            )}
-          </p>
-          <span className="text-[10px] text-neutral-400 block mt-0.5">
-            {posicion.abierta ? `Precio entrada: $${posicion.precio_entrada}` : 'Esperando señal técnica real'}
-          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
+              {config.activo ? 'Operativo' : 'En Pausa'}
+            </h3>
+            <p className="text-xs text-neutral-400 truncate mt-0.5">
+              {config.telegram_configured ? 'Telegram Vinculado ✓' : 'Telegram Pendiente ⚠️'}
+            </p>
+          </div>
         </div>
 
       </div>
 
-      {/* SECCIÓN PRINCIPAL: TABLERO CUANTITATIVO EN VIVO */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* FILA PRINCIPAL: TABLERO CUANTITATIVO + GESTIÓN ADMINISTRATIVA */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
-        {/* Panel Izquierdo (8 cols): Métricas de Flujo de Órdenes & Gráfico de Presión */}
-        <div className="lg:col-span-8 card-fenix p-5 space-y-5">
+        {/* Panel Izquierdo (8 cols): Métricas de Mercado & Flujo de Órdenes */}
+        <div className="lg:col-span-8 phoenix-card overflow-hidden flex flex-col justify-between">
           
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-neutral-800">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-neutral-400 uppercase">Par Monitoreado:</span>
-              <div className="flex items-center gap-1 bg-neutral-900 p-1 rounded-xl border border-neutral-800">
+          {/* Card Header estilo Phoenix */}
+          <div className="px-5 py-3.5 bg-neutral-900/60 border-b border-neutral-800 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-blue-400" />
+              <h4 className="font-semibold text-sm text-white">Análisis de Mercado en Tiempo Real</h4>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Selector de Par */}
+              <div className="flex items-center gap-1 bg-neutral-900 p-0.5 rounded-lg border border-neutral-800">
                 {(config.pares_disponibles || ['SOLUSDT', 'BTCUSDT', 'ETHUSDT', 'BNBUSDT']).map((p) => (
                   <button
                     key={p}
@@ -531,190 +543,246 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                       setSelectedPair(p);
                       handleAnalizar(p);
                     }}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                    className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
                       selectedPair === p
-                        ? 'bg-rojo-fuego text-white shadow'
+                        ? 'bg-blue-600 text-white'
                         : 'text-neutral-400 hover:text-white'
                     }`}
                   >
-                    {p.replace('USDT', '/USDT')}
+                    {p.replace('USDT', '')}
                   </button>
                 ))}
               </div>
-            </div>
 
-            <button
-              type="button"
-              disabled={analyzing}
-              onClick={() => handleAnalizar(selectedPair)}
-              className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-neutral-200 flex items-center gap-1.5 transition"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${analyzing ? 'animate-spin text-amber-400' : ''}`} />
-              <span>Analizar Ahora</span>
-            </button>
-          </div>
-
-          {/* Resumen de Precio y Variación */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-neutral-950/60 p-4 rounded-xl border border-neutral-800">
-            <div>
-              <span className="text-[10px] text-neutral-400 uppercase font-bold block">Precio Spot Actual</span>
-              <span className="font-display text-2xl font-black text-white">
-                ${Number(mercado.precio || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-            <div>
-              <span className="text-[10px] text-neutral-400 uppercase font-bold block">Variación 24h</span>
-              <span
-                className={`font-display text-2xl font-black flex items-center gap-1 ${
-                  (mercado.cambio24h || 0) >= 0 ? 'text-emerald-400' : 'text-rojo-fuego'
-                }`}
+              <button
+                type="button"
+                disabled={analyzing}
+                onClick={() => handleAnalizar(selectedPair)}
+                className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-medium text-neutral-200 flex items-center gap-1.5 transition"
               >
-                {(mercado.cambio24h || 0) >= 0 ? '+' : ''}
-                {Number(mercado.cambio24h || 0).toFixed(2)}%
-              </span>
-            </div>
-            <div>
-              <span className="text-[10px] text-neutral-400 uppercase font-bold block">Rango 24h Alto / Bajo</span>
-              <span className="text-xs font-mono font-bold text-neutral-300">
-                ${Number(mercado.high24h || 0).toFixed(2)} / ${Number(mercado.low24h || 0).toFixed(2)}
-              </span>
-            </div>
-            <div>
-              <span className="text-[10px] text-neutral-400 uppercase font-bold block">RSI (14 Periodos)</span>
-              <span
-                className={`font-display text-2xl font-black ${
-                  (mercado.rsi || 50) > 70
-                    ? 'text-rojo-fuego'
-                    : (mercado.rsi || 50) < 30
-                    ? 'text-emerald-400'
-                    : 'text-amber-300'
-                }`}
-              >
-                {mercado.rsi || 50}
-              </span>
+                <RefreshCw className={`w-3.5 h-3.5 ${analyzing ? 'animate-spin text-blue-400' : ''}`} />
+                <span>Actualizar</span>
+              </button>
             </div>
           </div>
 
-          {/* BARRA DE PRESIÓN DE COMPRA VS VENTA (ORDER BOOK IMBALANCE) */}
-          <div className="space-y-2 bg-neutral-950/40 p-4 rounded-xl border border-neutral-800">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-emerald-400 flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4" /> Presión Compradora (Bids): {mercado.presion_compra || 50}%
-              </span>
-              <span className="text-rojo-fuego flex items-center gap-1.5">
-                Presión Vendedora (Asks): {mercado.presion_venta || 50}% <TrendingDown className="w-4 h-4" />
-              </span>
-            </div>
+          <div className="p-5 space-y-4 flex-1">
+            
+            {/* Rejilla de Métricas Oficiales */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-lg bg-neutral-900/40 border border-neutral-800">
+                <span className="text-[11px] text-neutral-400 block font-medium">Precio Spot</span>
+                <span className="text-xl font-bold text-white block mt-0.5">
+                  ${Number(mercado.precio || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
 
-            <div className="w-full h-4 bg-neutral-900 rounded-full overflow-hidden flex border border-neutral-700">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-600 to-teal-500 transition-all duration-500"
-                style={{ width: `${mercado.presion_compra || 50}%` }}
-              />
-              <div
-                className="h-full bg-gradient-to-r from-red-600 to-rose-700 transition-all duration-500"
-                style={{ width: `${mercado.presion_venta || 50}%` }}
-              />
-            </div>
-            <p className="text-[11px] text-neutral-400">
-              Calculado en base a la profundidad acumulada de los 20 mejores niveles del libro de órdenes oficial de Binance.
-            </p>
-          </div>
-
-          {/* TARJETA DE RECOMENDACIÓN & SIGNAL SCORE */}
-          <div className="p-4 rounded-xl bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 border border-neutral-800 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-neutral-400 uppercase">Señal Detectada:</span>
+              <div className="p-3 rounded-lg bg-neutral-900/40 border border-neutral-800">
+                <span className="text-[11px] text-neutral-400 block font-medium">Variación 24h</span>
                 <span
-                  className={`px-3 py-1 rounded-lg font-display text-lg font-black uppercase tracking-wider ${
-                    mercado.senal === 'COMPRAR'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse'
-                      : mercado.senal?.includes('VENTA')
-                      ? 'bg-red-500/20 text-rojo-fuego border border-red-500/40 animate-pulse'
-                      : 'bg-neutral-800 text-neutral-300 border border-neutral-700'
+                  className={`text-xl font-bold block mt-0.5 ${
+                    (mercado.cambio24h || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
                   }`}
                 >
-                  {mercado.senal || 'ESPERAR'}
+                  {(mercado.cambio24h || 0) >= 0 ? '+' : ''}
+                  {Number(mercado.cambio24h || 0).toFixed(2)}%
                 </span>
               </div>
 
+              <div className="p-3 rounded-lg bg-neutral-900/40 border border-neutral-800">
+                <span className="text-[11px] text-neutral-400 block font-medium">Rango 24h (Alto/Bajo)</span>
+                <span className="text-xs font-semibold text-neutral-200 block mt-1">
+                  ${Number(mercado.high24h || 0).toFixed(2)} / ${Number(mercado.low24h || 0).toFixed(2)}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-lg bg-neutral-900/40 border border-neutral-800">
+                <span className="text-[11px] text-neutral-400 block font-medium">RSI (14 Periodos)</span>
+                <span
+                  className={`text-xl font-bold block mt-0.5 ${
+                    (mercado.rsi || 50) > 70
+                      ? 'text-red-400'
+                      : (mercado.rsi || 50) < 30
+                      ? 'text-emerald-400'
+                      : 'text-amber-400'
+                  }`}
+                >
+                  {mercado.rsi || 50}
+                </span>
+              </div>
+            </div>
+
+            {/* Balance de Oferta y Demanda (Order Book Imbalance) */}
+            <div className="p-4 rounded-lg bg-neutral-900/40 border border-neutral-800 space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-emerald-400 flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5" /> Bids (Volumen Compra): {mercado.presion_compra || 50}%
+                </span>
+                <span className="text-red-400 flex items-center gap-1.5">
+                  Asks (Volumen Venta): {mercado.presion_venta || 50}% <TrendingDown className="w-3.5 h-3.5" />
+                </span>
+              </div>
+
+              <div className="w-full h-3 bg-neutral-900 rounded-full overflow-hidden flex border border-neutral-700/60">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${mercado.presion_compra || 50}%` }}
+                />
+                <div
+                  className="h-full bg-rose-500 transition-all duration-500"
+                  style={{ width: `${mercado.presion_venta || 50}%` }}
+                />
+              </div>
+
+              <p className="text-[11px] text-neutral-400">
+                Profundidad consolidada calculada sobre los 20 mejores niveles del libro de órdenes de Binance.
+              </p>
+            </div>
+
+            {/* Tarjeta de Diagnóstico y Señal Técnica */}
+            <div className="p-4 rounded-lg bg-neutral-900/50 border border-neutral-800 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-neutral-400">Diagnóstico Técnico:</span>
+                  <span
+                    className={`badge-phoenix px-3 py-1 font-bold ${
+                      mercado.senal === 'COMPRAR'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                        : mercado.senal?.includes('VENTA')
+                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                        : 'bg-neutral-800 text-neutral-300 border border-neutral-700'
+                    }`}
+                  >
+                    {mercado.senal || 'ESPERAR'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-neutral-400 font-medium">Índice de Confianza:</span>
+                  <span className="badge-phoenix bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    {mercado.score || 50} / 100
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-neutral-300 leading-relaxed">
+                <strong className="text-white">Fundamento:</strong> {mercado.razon || 'Condiciones de mercado en rango de evaluación.'}
+              </p>
+
+              {/* Niveles de Stop-Loss y Take-Profit */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="p-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800">
+                  <span className="text-[10px] text-neutral-400 uppercase font-semibold block">
+                    Stop-Loss (-{config.stop_loss_pct || 1.5}%)
+                  </span>
+                  <span className="text-sm font-bold text-rose-400 block mt-0.5">${mercado.stop_loss || '0.00'}</span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800">
+                  <span className="text-[10px] text-neutral-400 uppercase font-semibold block">
+                    Take-Profit (+{config.take_profit_pct || 2.5}%)
+                  </span>
+                  <span className="text-sm font-bold text-emerald-400 block mt-0.5">${mercado.take_profit || '0.00'}</span>
+                </div>
+              </div>
+
+              {/* Botones de Operación Manual */}
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  disabled={actionLoading}
+                  onClick={() => handleEjecutarOrden('COMPRA')}
+                  className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-sm"
+                >
+                  Ejecutar Compra {selectedPair.replace('USDT', '')} ({config.modo_simulacion ? 'Simulado' : 'Real'})
+                </button>
+                <button
+                  type="button"
+                  disabled={actionLoading || !posicion.abierta}
+                  onClick={() => handleEjecutarOrden('VENTA')}
+                  className={`flex-1 py-2 rounded-lg font-semibold text-xs transition ${
+                    posicion.abierta
+                      ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm'
+                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/60'
+                  }`}
+                >
+                  Cerrar Posición / Vender
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Panel Derecho (4 cols): Gestión Financiera & Alertas */}
+        <div className="lg:col-span-4 space-y-5">
+          
+          {/* Tarjeta 1: Liquidación y Retiro a Banco de Venezuela (0102) */}
+          <div className="phoenix-card overflow-hidden">
+            <div className="px-5 py-3.5 bg-neutral-900/60 border-b border-neutral-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-neutral-400">Score de Confianza:</span>
-                <span className="px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-sm border border-amber-500/30">
-                  {mercado.score || 50} / 100
-                </span>
+                <Building2 className="w-4 h-4 text-blue-400" />
+                <h4 className="font-semibold text-sm text-white">Retiro Banco de Venezuela</h4>
               </div>
+              <span className="badge-phoenix bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                Cuenta 0102
+              </span>
             </div>
 
-            <p className="text-xs text-neutral-300 leading-relaxed">
-              <strong className="text-white">Fundamento Cuantitativo:</strong> {mercado.razon || 'Evaluando condiciones de mercado.'}
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-neutral-800/80 text-xs font-mono">
-              <div className="bg-neutral-950 p-2.5 rounded-lg border border-neutral-800">
-                <span className="text-neutral-400 block text-[10px] uppercase">Stop-Loss Sugerido (-{config.stop_loss_pct || 1.5}%)</span>
-                <span className="font-bold text-rojo-fuego">${mercado.stop_loss || '0.00'}</span>
+            <div className="p-5 space-y-3.5">
+              <div className="p-3 rounded-lg bg-neutral-900/40 border border-neutral-800 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-neutral-400 block font-medium">Disponible</span>
+                  <span className="text-base font-bold text-emerald-400">
+                    ${Number(config.capital_disponible_usdt || 0).toFixed(2)} USDT
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-neutral-400 block font-medium">Estimado en BDV</span>
+                  <span className="text-base font-bold text-white">
+                    Bs. {(Number(config.capital_disponible_usdt || 0) * Number(config.tasa_bs_usdt || 54.2)).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
-              <div className="bg-neutral-950 p-2.5 rounded-lg border border-neutral-800">
-                <span className="text-neutral-400 block text-[10px] uppercase">Take-Profit Sugerido (+{config.take_profit_pct || 2.5}%)</span>
-                <span className="font-bold text-emerald-400">${mercado.take_profit || '0.00'}</span>
-              </div>
-            </div>
 
-            {/* Botones de Acción Manual Inmediata */}
-            <div className="pt-2 flex items-center gap-3">
+              <p className="text-[11px] text-neutral-400 leading-relaxed">
+                Flujo institucional vía Binance P2P oficial con verificación y acreditación directa en BDV en Línea.
+              </p>
+
               <button
                 type="button"
-                disabled={actionLoading}
-                onClick={() => handleEjecutarOrden('COMPRA')}
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow transition"
+                onClick={() => setShowRetiroModal(true)}
+                className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition"
               >
-                Comprar {selectedPair.replace('USDT', '')} ({config.modo_simulacion ? 'Simulado' : 'Real'})
-              </button>
-              <button
-                type="button"
-                disabled={actionLoading || !posicion.abierta}
-                onClick={() => handleEjecutarOrden('VENTA')}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition ${
-                  posicion.abierta
-                    ? 'bg-gradient-to-r from-red-600 to-rose-700 text-white hover:brightness-110 shadow'
-                    : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-                }`}
-              >
-                Cerrar Posición / Vender
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Solicitar Liquidación / Retiro BDV</span>
               </button>
             </div>
           </div>
 
-        </div>
+          {/* Tarjeta 2: Presupuesto & Tasa Operativa */}
+          <div className="phoenix-card overflow-hidden">
+            <div className="px-5 py-3.5 bg-neutral-900/60 border-b border-neutral-800 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-400" />
+              <h4 className="font-semibold text-sm text-white">Presupuesto y Tasa</h4>
+            </div>
 
-        {/* Panel Derecho (4 cols): Configuración de Presupuesto, Tasa & Telegram */}
-        <div className="lg:col-span-4 space-y-5">
-          
-          {/* Ajuste de Presupuesto y Tasa */}
-          <div className="card-fenix p-5 space-y-4">
-            <h3 className="font-display text-lg font-bold uppercase text-white flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-amber-400" /> Presupuesto & Tasa
-            </h3>
-
-            <form onSubmit={handleGuardarConfig} className="space-y-3">
+            <form onSubmit={handleGuardarConfig} className="p-5 space-y-3.5">
               <div>
-                <label className="block text-[11px] font-bold uppercase text-neutral-400 mb-1">
-                  Capital en Bolívares (Bs.)
+                <label className="block text-xs font-medium text-neutral-300 mb-1">
+                  Capital Asignado (Bs.)
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   value={editCapitalBs}
                   onChange={(e) => setEditCapitalBs(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-rojo-fuego"
+                  className="input-fenix text-xs font-semibold"
                   placeholder="Ej: 10000"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase text-neutral-400 mb-1">
+                <label className="block text-xs font-medium text-neutral-300 mb-1">
                   Tasa de Referencia (Bs. / USDT)
                 </label>
                 <input
@@ -722,136 +790,134 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                   step="0.01"
                   value={editTasa}
                   onChange={(e) => setEditTasa(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-rojo-fuego"
+                  className="input-fenix text-xs font-semibold"
                   placeholder="Ej: 54.20"
                 />
               </div>
 
-              <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-300">
-                <span>Equivalente: </span>
-                <strong className="text-emerald-400">
+              <div className="p-2.5 rounded-lg bg-neutral-900/40 border border-neutral-800 text-[11px] text-neutral-300 flex items-center justify-between">
+                <span>Equivalente en Cartera:</span>
+                <strong className="text-emerald-400 font-bold">
                   ${editTasa > 0 ? (editCapitalBs / editTasa).toFixed(2) : '0.00'} USDT
                 </strong>
-                {editTasa > 0 && editCapitalBs / editTasa < 5.2 && (
-                  <p className="text-[10px] text-amber-400 mt-1">
-                    ⚠️ Debe ser al menos 5.2 USDT para cumplir la orden mínima de Binance.
-                  </p>
-                )}
               </div>
 
               <button
                 type="submit"
                 disabled={actionLoading}
-                className="w-full py-2.5 rounded-xl bg-rojo-fuego text-white text-xs font-bold uppercase tracking-wider hover:brightness-110 shadow transition"
+                className="w-full py-2.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-100 border border-neutral-700 text-xs font-semibold shadow-sm transition"
               >
                 Actualizar Presupuesto
               </button>
             </form>
           </div>
 
-          {/* Configuración de Alertas Telegram con Asistente Rápido */}
-          <div className="card-fenix p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold uppercase text-white flex items-center gap-2">
-                <Send className="w-4 h-4 text-blue-400" /> Alertas a Telegram
-              </h3>
+          {/* Tarjeta 3: Alertas a Telegram (@LegionFenixbot) */}
+          <div className="phoenix-card overflow-hidden">
+            <div className="px-5 py-3.5 bg-neutral-900/60 border-b border-neutral-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Send className="w-4 h-4 text-blue-400" />
+                <h4 className="font-semibold text-sm text-white">Alertas Telegram</h4>
+              </div>
               {config.telegram_configured ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  <CheckCircle className="w-3 h-3" /> Bot Conectado
+                <span className="badge-phoenix bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <CheckCircle className="w-3 h-3" /> Conectado
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                  <Clock className="w-3 h-3" /> Pendiente Vincular
+                <span className="badge-phoenix bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  <Clock className="w-3 h-3" /> Pendiente
                 </span>
               )}
             </div>
 
-            {/* Asistente Rápido de 2 Pasos */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-950/40 via-neutral-900 to-indigo-950/40 border border-blue-500/25 space-y-2.5">
-              <div className="text-[11px] font-bold text-blue-300 uppercase tracking-wide flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-blue-400" /> Conexión Instantánea con tu Bot:
-              </div>
+            <div className="p-5 space-y-3.5">
+              {/* Asistente Rápido de 2 Pasos */}
+              <div className="p-3 rounded-lg bg-neutral-900/60 border border-neutral-800 space-y-2">
+                <div className="text-[11px] font-bold text-neutral-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-blue-400" /> Vinculación Oficial:
+                </div>
 
-              {/* Paso 1: Abrir el Bot */}
-              <a
-                href="https://t.me/LegionFenixbot"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-200 text-xs font-semibold transition group"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-500 text-white font-bold flex items-center justify-center text-[10px]">1</span>
-                  <span>Abrir <strong>@LegionFenixbot</strong> y pulsar <strong>INICIAR</strong></span>
-                </span>
-                <ExternalLink className="w-3.5 h-3.5 text-blue-400 group-hover:translate-x-0.5 transition" />
-              </a>
+                {/* Paso 1: Abrir el Bot */}
+                <a
+                  href="https://t.me/LegionFenixbot"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-medium transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-[10px]">1</span>
+                    <span>Abrir <strong>@LegionFenixbot</strong> y pulsar <strong>INICIAR</strong></span>
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 text-neutral-400" />
+                </a>
 
-              {/* Paso 2: Detección automática en 1 Clic */}
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={handleDetectarTelegram}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-blue-900/30 transition disabled:opacity-50"
-              >
-                <Zap className="w-3.5 h-3.5 text-amber-300" />
-                <span>2. Detectar y Vincular Mi Telegram Automáticamente</span>
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block text-[11px] font-bold uppercase text-neutral-400 mb-1">
-                  Telegram Bot Token
-                </label>
-                <input
-                  type="text"
-                  value={botToken}
-                  onChange={(e) => setBotToken(e.target.value)}
-                  placeholder="9292349620:AAHIEIX7fLe8Lc7XTrSCpTz35TlNKqrs7dI"
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase text-neutral-400 mb-1">
-                  Telegram Admin ID (Numérico)
-                </label>
-                <input
-                  type="text"
-                  value={adminTelegramId}
-                  onChange={(e) => setAdminTelegramId(e.target.value)}
-                  placeholder="Se detecta automáticamente al pulsar el botón azul"
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-1">
+                {/* Paso 2: Detección automática en 1 Clic */}
                 <button
                   type="button"
                   disabled={actionLoading}
-                  onClick={handleGuardarConfig}
-                  className="flex-1 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-bold text-neutral-200 transition"
+                  onClick={handleDetectarTelegram}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm transition disabled:opacity-50"
                 >
-                  Guardar ID
-                </button>
-                <button
-                  type="button"
-                  disabled={actionLoading}
-                  onClick={handleTestTelegram}
-                  className="flex-1 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs font-bold transition hover:brightness-110 shadow flex items-center justify-center gap-1.5"
-                >
-                  <Send className="w-3 h-3" /> Probar Alerta
+                  <Zap className="w-3.5 h-3.5 text-amber-300" />
+                  <span>2. Detectar y Vincular Mi Telegram Automáticamente</span>
                 </button>
               </div>
 
-              {/* Botón directo de ayuda */}
+              {/* Campos manuales */}
+              <div className="space-y-2.5 text-xs">
+                <div>
+                  <label className="block text-[11px] font-medium text-neutral-400 mb-1">
+                    Telegram Bot Token
+                  </label>
+                  <input
+                    type="text"
+                    value={botToken}
+                    onChange={(e) => setBotToken(e.target.value)}
+                    placeholder="9292349620:AAHIEIX7fLe8Lc7XTrSCpTz35TlNKqrs7dI"
+                    className="input-fenix text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-neutral-400 mb-1">
+                    Telegram Admin ID (Numérico)
+                  </label>
+                  <input
+                    type="text"
+                    value={adminTelegramId}
+                    onChange={(e) => setAdminTelegramId(e.target.value)}
+                    placeholder="Se completa automáticamente con el botón azul"
+                    className="input-fenix text-xs font-mono"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={handleGuardarConfig}
+                    className="flex-1 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 text-xs font-medium transition"
+                  >
+                    Guardar ID
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={handleTestTelegram}
+                    className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5"
+                  >
+                    <Send className="w-3 h-3" /> Probar Alerta
+                  </button>
+                </div>
+              </div>
+
               <div className="pt-2 border-t border-neutral-800/80 flex items-center justify-between text-[11px]">
                 <button
                   type="button"
                   onClick={() => setShowTelegramHelp(true)}
-                  className="text-amber-400 hover:underline flex items-center gap-1"
+                  className="text-neutral-400 hover:text-white flex items-center gap-1"
                 >
-                  <HelpCircle className="w-3 h-3" /> Ver Asistente Completo
+                  <HelpCircle className="w-3 h-3" /> Asistente de configuración
                 </button>
                 <a
                   href="https://t.me/LegionFenixbot"
@@ -869,70 +935,83 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
 
       </div>
 
-      {/* HISTORIAL DE OPERACIONES Y SEÑALES RECIENTES */}
-      <div className="card-fenix p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-display text-lg font-bold uppercase text-white flex items-center gap-2">
-            <Activity className="w-4 h-4 text-amber-400" /> Registro de Operaciones & Señales Ejecutadas
-          </h3>
-          <span className="text-xs text-neutral-400">Total registradas: {historial.length}</span>
+      {/* REGISTRO HISTÓRICO DE OPERACIONES (TABLA ESTILO PHOENIX / BIENES PÚBLICOS) */}
+      <div className="phoenix-card overflow-hidden">
+        <div className="px-5 py-3.5 bg-neutral-900/60 border-b border-neutral-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-blue-400" />
+            <h4 className="font-semibold text-sm text-white">Registro Histórico de Señales y Operaciones</h4>
+          </div>
+          <span className="text-xs text-neutral-400">{historial.length} registros</span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-neutral-300">
-            <thead className="text-[10px] uppercase font-bold text-neutral-400 bg-neutral-900/60 border-b border-neutral-800">
+          <table className="table-phoenix">
+            <thead>
               <tr>
-                <th className="py-2.5 px-3">Fecha</th>
-                <th className="py-2.5 px-3">Par</th>
-                <th className="py-2.5 px-3">Tipo</th>
-                <th className="py-2.5 px-3">Precio Spot</th>
-                <th className="py-2.5 px-3">Monto (USDT / Bs.)</th>
-                <th className="py-2.5 px-3">Presión Compra</th>
-                <th className="py-2.5 px-3">RSI</th>
-                <th className="py-2.5 px-3">Resultado</th>
+                <th>Fecha / Hora</th>
+                <th>Par Cripto</th>
+                <th>Operación</th>
+                <th>Precio Spot</th>
+                <th>Monto (USDT / Bs.)</th>
+                <th>Presión Compra</th>
+                <th>RSI (14)</th>
+                <th>Estado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-800/60 font-mono">
-              {historial.map((op) => (
-                <tr key={op.id} className="hover:bg-white/5 transition">
-                  <td className="py-2.5 px-3 text-neutral-400 text-[11px]">
-                    {new Date(op.fecha).toLocaleString('es-VE')}
+            <tbody>
+              {historial.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-6 text-neutral-500">
+                    No se han registrado operaciones en esta sesión.
                   </td>
-                  <td className="py-2.5 px-3 font-bold text-white">{op.par}</td>
-                  <td className="py-2.5 px-3 font-bold">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] ${
-                        op.tipo?.includes('COMPRA')
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-red-500/20 text-rojo-fuego border border-red-500/30'
-                      }`}
-                    >
-                      {op.tipo}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3">${Number(op.precio).toFixed(2)}</td>
-                  <td className="py-2.5 px-3">
-                    ${Number(op.monto_usdt).toFixed(2)} <span className="text-neutral-500">({Number(op.equivalente_bs).toFixed(0)} Bs.)</span>
-                  </td>
-                  <td className="py-2.5 px-3 font-sans font-bold text-emerald-400">{op.presion_compra}%</td>
-                  <td className="py-2.5 px-3 font-sans">{op.rsi}</td>
-                  <td className="py-2.5 px-3 font-sans font-bold text-neutral-200">{op.resultado}</td>
                 </tr>
-              ))}
+              ) : (
+                historial.map((op) => (
+                  <tr key={op.id}>
+                    <td className="text-neutral-400 text-xs">
+                      {new Date(op.fecha).toLocaleString('es-VE')}
+                    </td>
+                    <td className="font-semibold text-white">{op.par}</td>
+                    <td>
+                      <span
+                        className={`badge-phoenix px-2.5 py-0.5 ${
+                          op.tipo?.includes('COMPRA')
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        }`}
+                      >
+                        {op.tipo}
+                      </span>
+                    </td>
+                    <td className="font-semibold">${Number(op.precio).toFixed(2)}</td>
+                    <td>
+                      ${Number(op.monto_usdt).toFixed(2)} <span className="text-neutral-400">({Number(op.equivalente_bs).toFixed(0)} Bs.)</span>
+                    </td>
+                    <td className="text-emerald-400 font-semibold">{op.presion_compra}%</td>
+                    <td>{op.rsi}</td>
+                    <td>
+                      <span className="badge-phoenix bg-neutral-800 text-neutral-300 border border-neutral-700">
+                        {op.resultado}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* MODAL: ASISTENTE EN 1 MINUTO PARA TELEGRAM BOT */}
+      {/* MODAL: ASISTENTE PARA TELEGRAM BOT */}
       {showTelegramHelp && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="phoenix-card max-w-lg w-full p-6 space-y-4 shadow-xl border border-neutral-700">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div className="flex items-center gap-2">
                 <Smartphone className="w-5 h-5 text-blue-400" />
-                <h3 className="font-display text-xl font-black text-white uppercase">
-                  Cómo Obtener tu Bot Token en 1 Minuto
+                <h3 className="text-base font-bold text-white">
+                  Instrucciones de Vinculación con @LegionFenixbot
                 </h3>
               </div>
               <button
@@ -945,20 +1024,20 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
 
             <div className="space-y-3 text-xs text-neutral-300 leading-relaxed">
               <p className="text-neutral-400">
-                Telegram exige que el bot sea creado desde tu cuenta personal para garantizar que solo tú tengas control de tus alertas:
+                Tu bot oficial ya está registrado en el sistema. Para recibir las alertas solo debes seguir estos sencillos pasos:
               </p>
 
-              <div className="space-y-2.5 bg-neutral-950 p-4 rounded-xl border border-neutral-800">
+              <div className="space-y-2.5 bg-neutral-900/60 p-4 rounded-lg border border-neutral-800">
                 <div className="flex items-start gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0">1</span>
                   <div>
-                    <span className="font-bold text-white">Abre @BotFather:</span>
-                    <p className="text-neutral-400">
+                    <span className="font-semibold text-white">Abre el bot en Telegram:</span>
+                    <p className="text-neutral-400 mt-0.5">
                       Haz clic en{' '}
-                      <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline font-bold">
-                        Abrir @BotFather en Telegram
+                      <a href="https://t.me/LegionFenixbot" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline font-semibold">
+                        @LegionFenixbot
                       </a>{' '}
-                      y pulsa <code>/start</code>.
+                      y presiona el botón <strong>Iniciar</strong> (o envía <code>/start</code>).
                     </p>
                   </div>
                 </div>
@@ -966,33 +1045,9 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                 <div className="flex items-start gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0">2</span>
                   <div>
-                    <span className="font-bold text-white">Escribe <code>/newbot</code>:</span>
-                    <p className="text-neutral-400">
-                      Escribe un nombre (ej: <code>FenixAlerts</code>) y un usuario terminado en <code>bot</code> (ej: <code>LegionFenix_trading_bot</code>).
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0">3</span>
-                  <div>
-                    <span className="font-bold text-white">Copia el Token:</span>
-                    <p className="text-neutral-400">
-                      Copia el código que te da (algo como <code>78129381:AAH...</code>) y pégalo en la casilla de Bot Token.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-amber-600 text-white font-bold flex items-center justify-center text-xs shrink-0">4</span>
-                  <div>
-                    <span className="font-bold text-white">Obtén tu ID Numérico:</span>
-                    <p className="text-neutral-400">
-                      Abre{' '}
-                      <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline font-bold">
-                        @userinfobot
-                      </a>
-                      , dale <code>/start</code> y copia tu número de ID.
+                    <span className="font-semibold text-white">Vincular con 1 Clic:</span>
+                    <p className="text-neutral-400 mt-0.5">
+                      Regresa a este panel y presiona el botón azul <strong>Detectar y Vincular Mi Telegram</strong>. Tu ID se guardará automáticamente y te llegará un mensaje de confirmación.
                     </p>
                   </div>
                 </div>
@@ -1003,24 +1058,24 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
               <button
                 type="button"
                 onClick={() => setShowTelegramHelp(false)}
-                className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-500"
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
               >
-                Listo, voy a pegarlo
+                Entendido
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL: CONECTAR A CARTERAS REALES DE CRIPTOMONEDAS (BINANCE SPOT) */}
+      {/* MODAL: CONECTAR A CARTERAS DE CRIPTOMONEDAS (BINANCE SPOT) */}
       {showBinanceModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="phoenix-card max-w-lg w-full p-6 space-y-4 shadow-xl border border-neutral-700">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div className="flex items-center gap-2">
                 <Key className="w-5 h-5 text-amber-400" />
-                <h3 className="font-display text-xl font-black text-white uppercase">
-                  Conexión a Carteras de Criptomonedas (Binance)
+                <h3 className="text-base font-bold text-white">
+                  Conexión Oficial a Binance Spot API
                 </h3>
               </div>
               <button
@@ -1032,34 +1087,34 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
             </div>
 
             <div className="space-y-3 text-xs text-neutral-300">
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200">
-                <strong>Regla de Seguridad Obligatoria:</strong> Al crear tu API Key en Binance, activa <em>Habilitar lectura</em> y <em>Habilitar trading Spot</em>. <strong>NUNCA marques Habilitar retiros</strong>.
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                <strong>Protocolo de Seguridad:</strong> Habilita únicamente permisos de <em>Lectura</em> y <em>Spot Trading</em>. <strong>NUNCA habilites retiros (Withdrawals)</strong>.
               </div>
 
               <form onSubmit={handleConectarBinance} className="space-y-3">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-neutral-400 mb-1">
+                  <label className="block text-xs font-medium text-neutral-300 mb-1">
                     Binance API Key
                   </label>
                   <input
                     type="password"
                     value={binanceKey}
                     onChange={(e) => setBinanceKey(e.target.value)}
-                    placeholder="Pega tu API Key de Binance"
-                    className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                    placeholder="Clave pública de lectura y spot"
+                    className="input-fenix text-xs font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-neutral-400 mb-1">
+                  <label className="block text-xs font-medium text-neutral-300 mb-1">
                     Binance API Secret
                   </label>
                   <input
                     type="password"
                     value={binanceSecret}
                     onChange={(e) => setBinanceSecret(e.target.value)}
-                    placeholder="Pega tu Secret de Binance"
-                    className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                    placeholder="Clave secreta"
+                    className="input-fenix text-xs font-mono"
                   />
                 </div>
 
@@ -1068,26 +1123,26 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                     href="https://www.binance.com/es/my/settings/api-management"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-2 rounded-xl bg-neutral-800 text-neutral-300 hover:text-white text-xs font-bold flex items-center gap-1"
+                    className="px-3 py-2 rounded-lg bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 text-xs font-medium flex items-center gap-1.5"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" /> Crear Clave en Binance
+                    <ExternalLink className="w-3.5 h-3.5" /> Administrador API Binance
                   </a>
                   <button
                     type="submit"
                     disabled={actionLoading}
-                    className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider transition shadow"
+                    className="flex-1 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition shadow-sm"
                   >
-                    Conectar Cartera Real
+                    Guardar y Conectar
                   </button>
                 </div>
               </form>
 
               {binance.saldos && binance.saldos.length > 0 && (
                 <div className="pt-3 border-t border-neutral-800 space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase text-neutral-400 block">Saldos Detectados en Cartera:</span>
+                  <span className="text-[11px] font-semibold text-neutral-400 block">Saldos Detectados en Cartera:</span>
                   <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                     {binance.saldos.map((s) => (
-                      <div key={s.asset} className="bg-neutral-950 p-2 rounded-lg border border-neutral-800 flex justify-between">
+                      <div key={s.asset} className="bg-neutral-900/60 p-2 rounded-lg border border-neutral-800 flex justify-between">
                         <span className="text-white font-bold">{s.asset}:</span>
                         <span className="text-emerald-400">{s.total}</span>
                       </div>
@@ -1100,15 +1155,15 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
         </div>
       )}
 
-      {/* MODAL: ASISTENTE DE RETIRO A BANCO DE VENEZUELA (0102) CONECTADO A TELEGRAM */}
+      {/* MODAL: ASISTENTE DE RETIRO A BANCO DE VENEZUELA (0102) */}
       {showRetiroModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="phoenix-card max-w-lg w-full p-6 space-y-4 shadow-xl border border-neutral-700">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-amber-400" />
-                <h3 className="font-display text-xl font-black text-white uppercase">
-                  Flujo de Retiro Seguro • Banco de Venezuela
+                <Building2 className="w-5 h-5 text-blue-400" />
+                <h3 className="text-base font-bold text-white">
+                  Liquidación Oficial • Banco de Venezuela
                 </h3>
               </div>
               <button
@@ -1119,61 +1174,51 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
               </button>
             </div>
 
-            <div className="space-y-3 text-xs text-neutral-300">
-              <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800 flex items-center justify-between">
+            <div className="space-y-3.5 text-xs text-neutral-300">
+              <div className="p-3.5 rounded-lg bg-neutral-900/60 border border-neutral-800 flex items-center justify-between">
                 <div>
-                  <span className="text-neutral-400 block text-[10px] uppercase font-bold">Disponible a Retirar</span>
-                  <span className="font-display text-2xl font-black text-emerald-400">
+                  <span className="text-[10px] text-neutral-400 uppercase font-semibold block">Disponible a Liquidar</span>
+                  <span className="text-xl font-bold text-emerald-400">
                     ${Number(config.capital_disponible_usdt || 0).toFixed(2)} USDT
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-neutral-400 block text-[10px] uppercase font-bold">Monto Estimado en BDV</span>
-                  <span className="font-display text-2xl font-black text-white">
+                  <span className="text-[10px] text-neutral-400 uppercase font-semibold block">Acreditar en BDV</span>
+                  <span className="text-xl font-bold text-white">
                     Bs. {(Number(config.capital_disponible_usdt || 0) * Number(config.tasa_bs_usdt || 54.2)).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200">
-                <strong>Regla de Seguridad Financiera:</strong> Nunca uses bots de automatización de pantalla sobre BDV. El flujo legal y seguro es vía Binance P2P oficial con verificación en BDV en Línea.
+              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300">
+                <strong>Protocolo de Tesorería:</strong> La liquidación se ejecuta mediante Binance P2P con comprobante oficial validado en BDV en Línea antes de liberar activos.
               </div>
 
-              <ol className="list-decimal list-inside space-y-2 leading-relaxed">
-                <li>
-                  <strong>Pausar el motor:</strong> Al solicitar retiro, el bot se pausa automáticamente para proteger tus fondos.
-                </li>
-                <li>
-                  <strong>Mover fondos:</strong> Transfiere tus USDT desde billetera <strong>Spot</strong> a <strong>Fondos</strong> en Binance.
-                </li>
-                <li>
-                  <strong>Binance P2P directo:</strong> Abre el mercado P2P filtrando <em>Banco de Venezuela / Pago Móvil</em>.
-                </li>
-                <li>
-                  <strong>Verificación en BDV en Línea:</strong> Confirma con tu app de BDV que el dinero esté acreditado en tu cuenta antes de liberar la criptomoneda.
-                </li>
+              <ol className="list-decimal list-inside space-y-2 leading-relaxed text-neutral-300">
+                <li>El motor se pausa preventivamente para congelar la posición de tesorería.</li>
+                <li>Los USDT se liberan en el mercado P2P hacia cuenta bancaria 0102 BDV.</li>
+                <li>Se valida el número de referencia y saldo en BDV en Línea.</li>
               </ol>
 
-              {/* Botón para enviar guía directamente a Telegram */}
               <div className="pt-2 space-y-2">
                 <button
                   type="button"
                   disabled={actionLoading}
                   onClick={handleNotificarRetiroTelegram}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 shadow hover:brightness-110 transition"
+                  className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>Enviar Guía y Enlace de Retiro a mi Telegram</span>
+                  <span>Enviar Guía de Liquidación a Telegram</span>
                 </button>
 
                 <a
                   href="https://p2p.binance.com/es/trade/sell/USDT?fiat=VES&payment=BANK"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition"
+                  className="w-full py-2.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 font-semibold text-xs flex items-center justify-center gap-2 transition"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Abrir Binance P2P (Filtro Banco de Venezuela)</span>
+                  <span>Abrir Portal Binance P2P (Filtro Banco de Venezuela)</span>
                 </a>
               </div>
             </div>
@@ -1182,24 +1227,24 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
               <button
                 type="button"
                 onClick={() => setShowRetiroModal(false)}
-                className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold uppercase tracking-wider"
+                className="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-medium"
               >
-                Cerrar Asistente
+                Cerrar
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL: PROMPT MAESTRO COPIABLE PARA IA (CURSOR / WINDSURF) */}
+      {/* MODAL: DOCUMENTACIÓN Y PROMPT MAESTRO */}
       {showPromptModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="phoenix-card max-w-2xl w-full p-6 space-y-4 shadow-xl border border-neutral-700">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div className="flex items-center gap-2">
                 <Code2 className="w-5 h-5 text-blue-400" />
-                <h3 className="font-display text-xl font-black text-white uppercase">
-                  Prompt Maestro para Desarrolladores IA
+                <h3 className="text-base font-bold text-white">
+                  Documentación del Sistema y Prompt Maestro
                 </h3>
               </div>
               <button
@@ -1211,16 +1256,16 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
             </div>
 
             <p className="text-xs text-neutral-400">
-              Puedes copiar y pegar este prompt en Cursor, Windsurf, Copilot o en un bot para expandir o generar scripts adicionales:
+              Especificaciones de arquitectura técnica y reglas cuantitativas integradas en el sistema:
             </p>
 
-            <pre className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 text-[11px] font-mono text-neutral-300 max-h-72 overflow-y-auto whitespace-pre-wrap">
+            <pre className="p-4 rounded-lg bg-neutral-900/80 border border-neutral-800 text-[11px] font-mono text-neutral-300 max-h-72 overflow-y-auto whitespace-pre-wrap">
               {PROMPT_MAESTRO_TEXT}
             </pre>
 
             <div className="pt-3 border-t border-neutral-800 flex items-center justify-between">
-              <span className="text-[11px] text-neutral-500 font-mono">
-                Archivo guardado en: MODULO_TRADING_ADMIN_LEGION_FENIX.md
+              <span className="text-[11px] text-neutral-400 font-mono">
+                MODULO_TRADING_ADMIN_LEGION_FENIX.md
               </span>
               <button
                 type="button"
@@ -1229,10 +1274,10 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                   setCopiedPrompt(true);
                   setTimeout(() => setCopiedPrompt(false), 2500);
                 }}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition"
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 transition"
               >
                 <Copy className="w-3.5 h-3.5" />
-                <span>{copiedPrompt ? '¡Copiado al portapapeles!' : 'Copiar Prompt'}</span>
+                <span>{copiedPrompt ? '¡Copiado!' : 'Copiar Texto'}</span>
               </button>
             </div>
           </div>
