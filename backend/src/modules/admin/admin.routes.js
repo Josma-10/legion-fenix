@@ -42,6 +42,8 @@ router.post('/trading/config', checkRole(['ADMINISTRADOR']), tradingController.u
 router.post('/trading/toggle', checkRole(['ADMINISTRADOR']), tradingController.toggleBot);
 router.post('/trading/analizar', checkRole(['ADMINISTRADOR']), tradingController.analizarMercado);
 router.post('/trading/test-telegram', checkRole(['ADMINISTRADOR']), tradingController.testTelegram);
+router.post('/trading/notificar-retiro-telegram', checkRole(['ADMINISTRADOR']), tradingController.notificarRetiroTelegram);
+router.post('/trading/conectar-binance', checkRole(['ADMINISTRADOR']), tradingController.conectarBinance);
 router.post('/trading/simular-orden', checkRole(['ADMINISTRADOR']), tradingController.simularOrden);
 
 module.exports = router;

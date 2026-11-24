@@ -1,9 +1,14 @@
 /**
  * MÓDULO DE TRADING Y ALERTAS EN TIEMPO REAL (ADMIN ONLY)
- * Legión Fénix FC - Arquitectura Desacoplada y Segura
+ * Legión Fénix FC - Conectividad Global Cripto & Telegram Worker
  */
 
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const bcvService = require('../../services/bcvService');
+
+const envPath = path.resolve(__dirname, '../../../.env');
 
 // Estado en memoria con persistencia tolerante a fallos
 const TRADING_STATE = {
@@ -23,6 +28,15 @@ const TRADING_STATE = {
   telegram_config: {
     bot_token: process.env.TELEGRAM_BOT_TOKEN || '',
     admin_id: process.env.TELEGRAM_ADMIN_ID || '',
+  },
+  binance_config: {
+    api_key: process.env.BINANCE_API_KEY || '',
+    api_secret: process.env.BINANCE_API_SECRET || '',
+    conectado: false,
+    saldos: [],
+    canTrade: true,
+    canWithdraw: false,
+    ultimo_chequeo: null,
   },
   historial_operaciones: [
     {
@@ -54,7 +68,7 @@ const TRADING_STATE = {
   ],
 };
 
-// Sincronizar tasa inicial con BCV si está disponible
+// Sincronizar tasa inicial con BCV
 (async () => {
   try {
     const bcv = await bcvService.getBcvRate();
@@ -68,6 +82,54 @@ const TRADING_STATE = {
     // Mantener tasa predeterminada
   }
 })();
+
+/**
+ * Guarda variables en .env de forma segura
+ */
+function guardarEnEnv(key, value) {
+  try {
+    if (!fs.existsSync(envPath)) return;
+    let content = fs.readFileSync(envPath, 'utf8');
+    const regex = new RegExp(`^${key}=.*$`, 'm');
+    if (regex.test(content)) {
+      content = content.replace(regex, `${key}=${value}`);
+    } else {
+      content += `\n${key}=${value}`;
+    }
+    fs.writeFileSync(envPath, content, 'utf8');
+  } catch (err) {
+    console.error('Error al persistir variable en .env:', err.message);
+  }
+}
+
+/**
+ * Envía mensaje formateado a la API oficial de Telegram
+ */
+async function enviarMensajeTelegram(botToken, adminId, texto, replyMarkup = null) {
+  if (!botToken || !adminId) return false;
+  try {
+    const payload = {
+      chat_id: adminId,
+      text: texto,
+      parse_mode: 'Markdown',
+    };
+    if (replyMarkup) {
+      payload.reply_markup = replyMarkup;
+    }
+
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(6000),
+    });
+    const d = await res.json();
+    return d.ok;
+  } catch (err) {
+    console.error('Error enviando notificación a Telegram:', err.message);
+    return false;
+  }
+}
 
 /**
  * Consulta velas recientes y calcula RSI (14) y EMAs
@@ -136,7 +198,7 @@ async function obtenerAnalisisMercado(symbol = 'SOLUSDT') {
       cambio24h = Number(ticker.priceChangePercent);
     }
 
-    // 2. Libro de órdenes (Top 20) para Order Book Imbalance / Presión
+    // 2. Libro de órdenes (Top 20) para Order Book Imbalance
     const depthRes = await fetch(`https://api.binance.com/api/v3/depth?symbol=${normSymbol}&limit=20`, {
       signal: AbortSignal.timeout(4000),
     });
@@ -164,7 +226,6 @@ async function obtenerAnalisisMercado(symbol = 'SOLUSDT') {
       ema21 = ind.ema21;
     }
   } catch {
-    // Fallback con datos razonables de mercado si no hay conexión externa
     const defaultPrices = { SOLUSDT: 145.2, BTCUSDT: 92450.0, ETHUSDT: 3410.0, BNBUSDT: 630.0 };
     precio = defaultPrices[normSymbol] || 150.0;
     cambio24h = 1.85;
@@ -212,6 +273,68 @@ async function obtenerAnalisisMercado(symbol = 'SOLUSDT') {
   };
 }
 
+// ==============================================================================
+// MOTOR WORKER DE MONITOREO CONTINUO Y DISPARADOR DE ALERTAS A TELEGRAM
+// ==============================================================================
+let workerInterval = null;
+let ultimoAlertaTiempo = 0;
+let ultimaSenalNotificada = null;
+
+function iniciarWorkerMonitoreo() {
+  if (workerInterval) return;
+  workerInterval = setInterval(async () => {
+    if (!TRADING_STATE.activo) return;
+
+    try {
+      const data = await obtenerAnalisisMercado(TRADING_STATE.par_activo);
+      const ahora = Date.now();
+      const haPasadoCooldown = ahora - ultimoAlertaTiempo > 4 * 60 * 1000; // 4 minutos de intervalo anti-spam
+      const cambioDeSenal = data.senal !== ultimaSenalNotificada && data.senal !== 'ESPERAR';
+
+      if ((haPasadoCooldown || cambioDeSenal) && (data.senal === 'COMPRAR' || data.senal.includes('VENTA'))) {
+        ultimoAlertaTiempo = ahora;
+        ultimaSenalNotificada = data.senal;
+
+        const botToken = TRADING_STATE.telegram_config.bot_token;
+        const adminId = TRADING_STATE.telegram_config.admin_id;
+
+        if (botToken && adminId) {
+          const emoji = data.senal === 'COMPRAR' ? '🟢 COMPRA FUERTE' : '🔴 VENTA / TOMA DE GANANCIAS';
+          const p2pUrl = 'https://p2p.binance.com/es/trade/sell/USDT?fiat=VES&payment=BANK';
+
+          const texto =
+            `⚡ *ALERTA EN VIVO • LEGIÓN FÉNIX TRADING*\n\n` +
+            `*Señal:* \`${emoji}\` (Confianza: ${data.score}/100)\n` +
+            `• *Activo:* \`${data.symbol}\`\n` +
+            `• *Precio Spot:* \`$${Number(data.precio).toLocaleString('en-US')}\` (${data.cambio24h >= 0 ? '+' : ''}${data.cambio24h}%)\n` +
+            `• *Presión Compradora:* \`${data.presion_compra}%\` vs Vendedora: \`${data.presion_venta}%\`\n` +
+            `• *RSI (14):* \`${data.rsi}\` | *Tendencia:* \`${data.ema9 > data.ema21 ? 'Alcista ↗' : 'Bajista ↘'}\`\n\n` +
+            `🎯 *Gestión de Riesgo Sugerida:*\n` +
+            `• Stop-Loss (-${TRADING_STATE.stop_loss_pct}%): \`$${data.stop_loss}\`\n` +
+            `• Take-Profit (+${TRADING_STATE.take_profit_pct}%): \`$${data.take_profit}\`\n\n` +
+            `💰 *Presupuesto Asignado:* \`Bs. ${TRADING_STATE.capital_asignado_bs.toLocaleString('es-VE')}\` (~$${TRADING_STATE.capital_disponible_usdt} USDT)\n\n` +
+            `_Monitoreo continuo oficial de Binance Spot en tiempo real._`;
+
+          const teclado = {
+            inline_keyboard: [
+              [
+                { text: '🏦 Retirar Ganancias a BDV', url: p2pUrl },
+                { text: '📊 Ver Panel en Vivo', url: process.env.FRONTEND_URL || 'http://localhost:3000/admin' },
+              ],
+            ],
+          };
+
+          await enviarMensajeTelegram(botToken, adminId, texto, teclado);
+        }
+      }
+    } catch (err) {
+      console.error('Error en ciclo del worker de trading:', err.message);
+    }
+  }, 25000); // Análisis continuo cada 25 segundos
+}
+
+iniciarWorkerMonitoreo();
+
 /**
  * GET /api/admin/trading/status
  */
@@ -234,6 +357,9 @@ exports.getStatus = async (req, res) => {
         telegram_configured: !!(
           TRADING_STATE.telegram_config.bot_token && TRADING_STATE.telegram_config.admin_id
         ),
+        telegram_admin_id: TRADING_STATE.telegram_config.admin_id,
+        binance_connected: TRADING_STATE.binance_config.conectado,
+        binance_has_keys: !!(TRADING_STATE.binance_config.api_key && TRADING_STATE.binance_config.api_secret),
       },
       posicion: {
         abierta: TRADING_STATE.posicion_abierta,
@@ -244,6 +370,11 @@ exports.getStatus = async (req, res) => {
           : 0,
       },
       mercado: market,
+      binance: {
+        conectado: TRADING_STATE.binance_config.conectado,
+        saldos: TRADING_STATE.binance_config.saldos,
+        ultimo_chequeo: TRADING_STATE.binance_config.ultimo_chequeo,
+      },
       historial: TRADING_STATE.historial_operaciones.slice(0, 10),
     });
   } catch (error) {
@@ -264,6 +395,8 @@ exports.updateConfig = async (req, res) => {
     stop_loss_pct,
     telegram_bot_token,
     telegram_admin_id,
+    binance_api_key,
+    binance_api_secret,
   } = req.body;
 
   try {
@@ -288,6 +421,7 @@ exports.updateConfig = async (req, res) => {
 
     if (modo_simulacion !== undefined) {
       TRADING_STATE.modo_simulacion = Boolean(modo_simulacion);
+      guardarEnEnv('TRADING_SANDBOX_MODE', String(TRADING_STATE.modo_simulacion));
     }
 
     if (take_profit_pct !== undefined) {
@@ -298,19 +432,31 @@ exports.updateConfig = async (req, res) => {
       TRADING_STATE.stop_loss_pct = Math.max(0.5, Number(stop_loss_pct));
     }
 
-    if (telegram_bot_token !== undefined) {
+    if (telegram_bot_token !== undefined && telegram_bot_token.trim()) {
       TRADING_STATE.telegram_config.bot_token = String(telegram_bot_token).trim();
+      guardarEnEnv('TELEGRAM_BOT_TOKEN', TRADING_STATE.telegram_config.bot_token);
     }
 
-    if (telegram_admin_id !== undefined) {
+    if (telegram_admin_id !== undefined && telegram_admin_id.trim()) {
       TRADING_STATE.telegram_config.admin_id = String(telegram_admin_id).trim();
+      guardarEnEnv('TELEGRAM_ADMIN_ID', TRADING_STATE.telegram_config.admin_id);
+    }
+
+    if (binance_api_key !== undefined && binance_api_key.trim()) {
+      TRADING_STATE.binance_config.api_key = String(binance_api_key).trim();
+      guardarEnEnv('BINANCE_API_KEY', TRADING_STATE.binance_config.api_key);
+    }
+
+    if (binance_api_secret !== undefined && binance_api_secret.trim()) {
+      TRADING_STATE.binance_config.api_secret = String(binance_api_secret).trim();
+      guardarEnEnv('BINANCE_API_SECRET', TRADING_STATE.binance_config.api_secret);
     }
 
     TRADING_STATE.ultima_actualizacion = new Date().toISOString();
 
     return res.json({
       success: true,
-      message: 'Configuración de trading y alertas actualizada exitosamente.',
+      message: 'Configuración actualizada y persistida exitosamente.',
       config: TRADING_STATE,
     });
   } catch (error) {
@@ -325,7 +471,6 @@ exports.toggleBot = async (req, res) => {
   try {
     const nuevoEstado = !TRADING_STATE.activo;
 
-    // Validación de presupuesto mínimo en USDT de Binance Spot
     if (nuevoEstado && TRADING_STATE.capital_disponible_usdt < 5.2) {
       return res.status(400).json({
         error: `Capital disponible (${TRADING_STATE.capital_disponible_usdt} USDT) menor al mínimo requerido de 5.2 USDT en Binance Spot. Ajusta el capital en Bs. o la tasa.`,
@@ -339,7 +484,7 @@ exports.toggleBot = async (req, res) => {
       success: true,
       activo: TRADING_STATE.activo,
       message: TRADING_STATE.activo
-        ? 'Motor de monitoreo y análisis en tiempo real INICIADO.'
+        ? 'Motor de monitoreo continuo en tiempo real INICIADO. Escaneando señales cada 25s.'
         : 'Motor de trading DETENIDO por el Administrador.',
     });
   } catch (error) {
@@ -370,38 +515,166 @@ exports.testTelegram = async (req, res) => {
 
   if (!token || !adminId) {
     return res.status(400).json({
-      error: 'Se requiere el Bot Token y el Telegram Admin ID para enviar la prueba.',
+      error: 'Se requiere el Bot Token de @BotFather y tu Telegram Admin ID para enviar la prueba.',
     });
   }
 
   try {
-    const mensaje = `🛡️ *LEGIÓN FÉNIX FC — Alerta de Prueba*\n\n✅ *Conexión Exitosa con el Panel de Administrador.*\n• Entorno: \`${TRADING_STATE.modo_simulacion ? 'SIMULACIÓN (Testnet)' : 'PRODUCCIÓN REAL'}\`\n• Tasa Bs/USDT: \`${TRADING_STATE.tasa_bs_usdt.toFixed(2)} Bs.\`\n• Par Monitoreado: \`${TRADING_STATE.par_activo}\`\n\n_Las señales de compra/venta se enviarán automáticamente a este canal._`;
+    const mensaje = `🛡️ *LEGIÓN FÉNIX FC — Alerta de Prueba*\n\n✅ *Conexión Exitosa con el Panel de Administrador.*\n• Entorno: \`${TRADING_STATE.modo_simulacion ? 'SIMULACIÓN (Testnet)' : 'PRODUCCIÓN REAL'}\`\n• Tasa Bs/USDT: \`${TRADING_STATE.tasa_bs_usdt.toFixed(2)} Bs.\`\n• Par Monitoreado: \`${TRADING_STATE.par_activo}\`\n\n_Las señales reales de compra/venta se enviarán de forma continua a este canal._`;
 
-    const telegramRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: adminId,
-        text: mensaje,
-        parse_mode: 'Markdown',
-      }),
-      signal: AbortSignal.timeout(5000),
+    const resTelegram = await enviarMensajeTelegram(token, adminId, mensaje);
+    if (!resTelegram) {
+      return res.status(400).json({
+        error: 'Telegram no pudo entregar el mensaje. Verifica que hayas iniciado conversación con tu bot pulsando /start en Telegram.',
+      });
+    }
+
+    // Persistir tokens válidos
+    TRADING_STATE.telegram_config.bot_token = token;
+    TRADING_STATE.telegram_config.admin_id = adminId;
+    guardarEnEnv('TELEGRAM_BOT_TOKEN', token);
+    guardarEnEnv('TELEGRAM_ADMIN_ID', adminId);
+
+    return res.json({
+      success: true,
+      message: '¡Mensaje de prueba entregado exitosamente a tu Telegram!',
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: `Error al conectar con Telegram: ${error.message}. Verifica el Token y tu conexión.`,
+    });
+  }
+};
+
+/**
+ * POST /api/admin/trading/notificar-retiro-telegram
+ * Dispara la guía y enlace de retiro BDV directamente a Telegram
+ */
+exports.notificarRetiroTelegram = async (req, res) => {
+  const token = TRADING_STATE.telegram_config.bot_token;
+  const adminId = TRADING_STATE.telegram_config.admin_id;
+
+  if (!token || !adminId) {
+    return res.status(400).json({
+      error: 'Configura primero tu Telegram Bot Token y Admin ID para recibir las alertas.',
+    });
+  }
+
+  // Pausar motor por seguridad al solicitar retiro
+  TRADING_STATE.activo = false;
+
+  const bsEstimados = Number((TRADING_STATE.capital_disponible_usdt * TRADING_STATE.tasa_bs_usdt).toFixed(2));
+  const p2pUrl = 'https://p2p.binance.com/es/trade/sell/USDT?fiat=VES&payment=BANK';
+
+  const texto =
+    `🏦 *SOLICITUD DE RETIRO A BANCO DE VENEZUELA (0102)*\n\n` +
+    `• *Disponible en Spot:* \`$${TRADING_STATE.capital_disponible_usdt} USDT\`\n` +
+    `• *Tasa Referencial:* \`Bs. ${TRADING_STATE.tasa_bs_usdt.toFixed(2)} / USDT\`\n` +
+    `• *Monto Estimado en BDV:* \`Bs. ${bsEstimados.toLocaleString('es-VE', { minimumFractionDigits: 2 })}\`\n\n` +
+    `🔒 *Instrucciones Seguras para Retirar a tu Cuenta:*\n` +
+    `1. El bot ha sido *PAUSADO* automáticamente para proteger tus fondos.\n` +
+    `2. Entra a tu app oficial de Binance y pasa los USDT de billetera *Spot* a *Fondos*.\n` +
+    `3. Ingresa al enlace oficial de Binance P2P (filtrado para Banco de Venezuela / Pago Móvil):\n` +
+    `   👉 ${p2pUrl}\n` +
+    `4. Vende tus USDT al comprador verificado con mejor reputación.\n` +
+    `5. *REGLA DE ORO:* Solo libera las criptomonedas cuando veas los Bolívares acreditados en tu app del *Banco de Venezuela (BDV en Línea)*.`;
+
+  const teclado = {
+    inline_keyboard: [
+      [{ text: '🌐 Abrir Binance P2P (Banco de Venezuela)', url: p2pUrl }],
+    ],
+  };
+
+  const enviado = await enviarMensajeTelegram(token, adminId, texto, teclado);
+  if (!enviado) {
+    return res.status(500).json({
+      error: 'No se pudo entregar el mensaje de retiro a Telegram. Verifica tu Bot Token e ID.',
+    });
+  }
+
+  return res.json({
+    success: true,
+    message: 'Alerta y guía de retiro seguro enviada exitosamente a tu Telegram.',
+    monto_usdt: TRADING_STATE.capital_disponible_usdt,
+    monto_bs: bsEstimados,
+    p2p_url: p2pUrl,
+  });
+};
+
+/**
+ * POST /api/admin/trading/conectar-binance
+ * Conecta a carteras reales de Binance Spot usando HMAC SHA-256
+ */
+exports.conectarBinance = async (req, res) => {
+  const { api_key, api_secret } = req.body;
+  const apiKey = (api_key || TRADING_STATE.binance_config.api_key || '').trim();
+  const apiSecret = (api_secret || TRADING_STATE.binance_config.api_secret || '').trim();
+
+  if (!apiKey || !apiSecret) {
+    return res.status(400).json({
+      error: 'Ingresa tu API Key y API Secret de Binance para conectar tus carteras.',
+    });
+  }
+
+  try {
+    const timestamp = Date.now();
+    const query = `timestamp=${timestamp}`;
+    const signature = crypto.createHmac('sha256', apiSecret).update(query).digest('hex');
+
+    const bRes = await fetch(`https://api.binance.com/api/v3/account?${query}&signature=${signature}`, {
+      headers: {
+        'X-MBX-APIKEY': apiKey,
+      },
+      signal: AbortSignal.timeout(6000),
     });
 
-    const data = await telegramRes.json();
-    if (!data.ok) {
+    const data = await bRes.json();
+    if (!bRes.ok || data.code) {
       return res.status(400).json({
-        error: `Telegram API error: ${data.description || 'No se pudo entregar el mensaje'}`,
+        error: `Error de Binance API: ${data.msg || 'Credenciales inválidas o sin permisos de lectura Spot'}`,
       });
+    }
+
+    const saldosActivos = (data.balances || [])
+      .filter((b) => Number(b.free) > 0 || Number(b.locked) > 0)
+      .map((b) => ({
+        asset: b.asset,
+        free: Number(b.free),
+        locked: Number(b.locked),
+        total: Number(b.free) + Number(b.locked),
+      }));
+
+    TRADING_STATE.binance_config = {
+      api_key: apiKey,
+      api_secret: apiSecret,
+      conectado: true,
+      canTrade: Boolean(data.canTrade),
+      canWithdraw: Boolean(data.canWithdraw),
+      saldos: saldosActivos,
+      ultimo_chequeo: new Date().toISOString(),
+    };
+
+    guardarEnEnv('BINANCE_API_KEY', apiKey);
+    guardarEnEnv('BINANCE_API_SECRET', apiSecret);
+
+    const usdtAsset = saldosActivos.find((b) => b.asset === 'USDT');
+    if (usdtAsset && usdtAsset.free > 0) {
+      TRADING_STATE.capital_disponible_usdt = Number(usdtAsset.free.toFixed(2));
+      TRADING_STATE.capital_asignado_bs = Number(
+        (TRADING_STATE.capital_disponible_usdt * TRADING_STATE.tasa_bs_usdt).toFixed(2)
+      );
     }
 
     return res.json({
       success: true,
-      message: 'Mensaje de prueba enviado exitosamente a tu Telegram privado.',
+      message: 'Cartera de Binance Spot conectada exitosamente.',
+      canTrade: data.canTrade,
+      canWithdraw: data.canWithdraw,
+      saldos: saldosActivos,
     });
   } catch (error) {
     return res.status(500).json({
-      error: `Error al conectar con Telegram: ${error.message}. Verifica el Token y tu conexión a internet.`,
+      error: `No se pudo conectar a Binance: ${error.message}. Verifica tus claves y conexión.`,
     });
   }
 };
@@ -410,7 +683,7 @@ exports.testTelegram = async (req, res) => {
  * POST /api/admin/trading/simular-orden
  */
 exports.simularOrden = async (req, res) => {
-  const { accion, par } = req.body; // 'COMPRA' | 'VENTA'
+  const { accion, par } = req.body;
   try {
     const targetPar = par || TRADING_STATE.par_activo;
     const market = await obtenerAnalisisMercado(targetPar);

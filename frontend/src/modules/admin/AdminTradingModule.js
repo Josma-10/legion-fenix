@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Play,
   Pause,
@@ -16,6 +16,11 @@ import {
   Code2,
   Wallet,
   Activity,
+  Key,
+  Volume2,
+  VolumeX,
+  HelpCircle,
+  Smartphone,
 } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -27,15 +32,53 @@ export default function AdminTradingModule({ isAdmin }) {
   const [selectedPair, setSelectedPair] = useState('SOLUSDT');
   const [analyzing, setAnalyzing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Estados de Configuración Rápida
+  // Estados de Configuración y Telegram
   const [editCapitalBs, setEditCapitalBs] = useState('');
   const [editTasa, setEditTasa] = useState('');
   const [botToken, setBotToken] = useState('');
   const [adminTelegramId, setAdminTelegramId] = useState('');
+
+  // Estados de Conexión Binance
+  const [binanceKey, setBinanceKey] = useState('');
+  const [binanceSecret, setBinanceSecret] = useState('');
+
+  // Modales
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [showRetiroModal, setShowRetiroModal] = useState(false);
+  const [showTelegramHelp, setShowTelegramHelp] = useState(false);
+  const [showBinanceModal, setShowBinanceModal] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+  const prevSignalRef = useRef(null);
+
+  // Sonido sintético de alerta vía Web Audio API
+  const playAlertSound = useCallback((tipo) => {
+    if (!soundEnabled || typeof window === 'undefined') return;
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (tipo === 'COMPRA') {
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+      } else {
+        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime); // G5
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.15); // C5
+      }
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.35);
+    } catch {
+      // AudioContext no disponible o silenciado
+    }
+  }, [soundEnabled]);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -46,20 +89,30 @@ export default function AdminTradingModule({ isAdmin }) {
         if (!editCapitalBs) setEditCapitalBs(res.data.config.capital_asignado_bs);
         if (!editTasa) setEditTasa(res.data.config.tasa_bs_usdt);
         if (res.data.config.par_activo) setSelectedPair(res.data.config.par_activo);
+        if (!adminTelegramId && res.data.config.telegram_admin_id) {
+          setAdminTelegramId(res.data.config.telegram_admin_id);
+        }
+
+        // Detección de nueva señal para sonido
+        const currSignal = res.data.mercado?.senal;
+        if (currSignal && currSignal !== 'ESPERAR' && currSignal !== prevSignalRef.current) {
+          prevSignalRef.current = currSignal;
+          playAlertSound(currSignal === 'COMPRAR' ? 'COMPRA' : 'VENTA');
+        }
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Error al conectar con el motor de trading.');
     } finally {
       setLoading(false);
     }
-  }, [editCapitalBs, editTasa]);
+  }, [editCapitalBs, editTasa, adminTelegramId, playAlertSound]);
 
   useEffect(() => {
     fetchStatus();
-    // Sondeo de mercado cada 30 segundos si el motor está activo
+    // Sondeo de mercado cada 20 segundos para monitoreo constante
     const timer = setInterval(() => {
       fetchStatus();
-    }, 30000);
+    }, 20000);
     return () => clearInterval(timer);
   }, [fetchStatus]);
 
@@ -103,7 +156,7 @@ export default function AdminTradingModule({ isAdmin }) {
 
   // Guardar Parámetros de Capital y Tasa
   const handleGuardarConfig = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setActionLoading(true);
     setError('');
     setSuccess('');
@@ -118,7 +171,7 @@ export default function AdminTradingModule({ isAdmin }) {
 
       const res = await api.post('/admin/trading/config', payload);
       if (res.data.success) {
-        setSuccess('Parámetros guardados y sincronizados.');
+        setSuccess('Configuración guardada y sincronizada.');
         fetchStatus();
       }
     } catch (err) {
@@ -139,10 +192,52 @@ export default function AdminTradingModule({ isAdmin }) {
         admin_id: adminTelegramId,
       });
       if (res.data.success) {
-        setSuccess('¡Alerta de prueba enviada con éxito a tu Telegram!');
+        setSuccess('¡Alerta de prueba entregada exitosamente a tu Telegram!');
+        fetchStatus();
       }
     } catch (err) {
       setError(err.response?.data?.error || 'No se pudo enviar la alerta de prueba a Telegram.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Disparar Guía de Retiro BDV a Telegram
+  const handleNotificarRetiroTelegram = async () => {
+    setActionLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await api.post('/admin/trading/notificar-retiro-telegram');
+      if (res.data.success) {
+        setSuccess('¡Instrucciones de retiro enviadas directamente a tu chat de Telegram!');
+        fetchStatus();
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo enviar la notificación de retiro a Telegram.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Conectar con cartera real de Binance
+  const handleConectarBinance = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setActionLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await api.post('/admin/trading/conectar-binance', {
+        api_key: binanceKey,
+        api_secret: binanceSecret,
+      });
+      if (res.data.success) {
+        setSuccess(res.data.message);
+        setShowBinanceModal(false);
+        fetchStatus();
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al conectar con Binance API.');
     } finally {
       setActionLoading(false);
     }
@@ -191,6 +286,7 @@ export default function AdminTradingModule({ isAdmin }) {
   const config = data?.config || {};
   const mercado = data?.mercado || {};
   const posicion = data?.posicion || {};
+  const binance = data?.binance || {};
   const historial = data?.historial || [];
 
   const isMinimoBinanceOk = (config.capital_disponible_usdt || 0) >= 5.2;
@@ -234,17 +330,25 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
             >
               {config.modo_simulacion ? 'Modo Simulación (Testnet)' : 'Modo Operación Real'}
             </span>
+            <button
+              type="button"
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              title={soundEnabled ? 'Silenciar alertas sonoras' : 'Activar alertas sonoras'}
+              className="p-1 rounded-lg bg-neutral-800 text-neutral-300 hover:text-white"
+            >
+              {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5 text-neutral-500" />}
+            </button>
           </div>
           <h2 className="font-display text-2xl font-black text-white uppercase italic">
             Monitor de Flujo de Órdenes & Alertas en Tiempo Real
           </h2>
           <p className="text-xs text-neutral-400">
-            Cálculo de presión compradora/vendedora en Binance Spot, gestión de capital Bs./USDT y alertas a Telegram.
+            Escaneo continuo cada 25s en Binance Spot, conexión directa a carteras y alertas instantáneas a Telegram.
           </p>
         </div>
 
         {/* Botones de Acción Primaria */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             disabled={actionLoading}
@@ -258,14 +362,23 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
             {config.activo ? (
               <>
                 <Pause className="w-4 h-4 text-amber-400" />
-                <span>Pausar Motor</span>
+                <span>Pausar Escáner</span>
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 text-white" />
-                <span>Iniciar Motor Automático</span>
+                <span>Iniciar Escáner Continuo</span>
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowBinanceModal(true)}
+            className="px-3.5 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-amber-500/50 text-xs font-bold text-neutral-200 flex items-center gap-1.5 transition"
+          >
+            <Key className="w-4 h-4 text-amber-400" />
+            <span>{binance.conectado ? 'Cartera Binance Conectada' : 'Conectar Binance'}</span>
           </button>
 
           <button
@@ -337,20 +450,20 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
           </span>
         </div>
 
-        {/* Estado del Motor */}
+        {/* Estado del Motor Continuo */}
         <div className="card-fenix p-4 border-l-4 border-l-blue-500">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Estado del Motor</span>
+            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Escaneo Continuo</span>
             <Activity className="w-4 h-4 text-blue-400" />
           </div>
           <div className="flex items-center gap-2 mt-1">
             <span className={`w-3 h-3 rounded-full ${config.activo ? 'bg-emerald-400 animate-ping' : 'bg-neutral-600'}`}></span>
             <span className="font-display text-xl font-bold text-white uppercase">
-              {config.activo ? 'Monitoreando Activo' : 'Detenido / En Pausa'}
+              {config.activo ? 'Escaneando Cada 25s' : 'Detenido / En Pausa'}
             </span>
           </div>
           <span className="text-[10px] text-neutral-400 block mt-0.5">
-            Intervalo de escaneo: Cada 60s
+            {config.telegram_configured ? 'Alertas Telegram: Activas ✓' : 'Falta configurar Telegram ⚠️'}
           </span>
         </div>
 
@@ -368,7 +481,7 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
             )}
           </p>
           <span className="text-[10px] text-neutral-400 block mt-0.5">
-            {posicion.abierta ? `Precio entrada: $${posicion.precio_entrada}` : 'Esperando señal técnica'}
+            {posicion.abierta ? `Precio entrada: $${posicion.precio_entrada}` : 'Esperando señal técnica real'}
           </span>
         </div>
 
@@ -467,7 +580,6 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
               </span>
             </div>
 
-            {/* Barra gráfica de volumen relativo */}
             <div className="w-full h-4 bg-neutral-900 rounded-full overflow-hidden flex border border-neutral-700">
               <div
                 className="h-full bg-gradient-to-r from-emerald-600 to-teal-500 transition-all duration-500"
@@ -487,13 +599,13 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
           <div className="p-4 rounded-xl bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 border border-neutral-800 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-neutral-400 uppercase">Señal Sugerida:</span>
+                <span className="text-xs font-bold text-neutral-400 uppercase">Señal Detectada:</span>
                 <span
                   className={`px-3 py-1 rounded-lg font-display text-lg font-black uppercase tracking-wider ${
                     mercado.senal === 'COMPRAR'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse'
                       : mercado.senal?.includes('VENTA')
-                      ? 'bg-red-500/20 text-rojo-fuego border border-red-500/40'
+                      ? 'bg-red-500/20 text-rojo-fuego border border-red-500/40 animate-pulse'
                       : 'bg-neutral-800 text-neutral-300 border border-neutral-700'
                   }`}
                 >
@@ -510,7 +622,7 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
             </div>
 
             <p className="text-xs text-neutral-300 leading-relaxed">
-              <strong className="text-white">Fundamento Técnico:</strong> {mercado.razon || 'Evaluando condiciones de mercado.'}
+              <strong className="text-white">Fundamento Cuantitativo:</strong> {mercado.razon || 'Evaluando condiciones de mercado.'}
             </p>
 
             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-neutral-800/80 text-xs font-mono">
@@ -611,11 +723,20 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
             </form>
           </div>
 
-          {/* Configuración de Alertas Telegram */}
+          {/* Configuración de Alertas Telegram con Asistente Rápido */}
           <div className="card-fenix p-5 space-y-4">
-            <h3 className="font-display text-lg font-bold uppercase text-white flex items-center gap-2">
-              <Send className="w-4 h-4 text-blue-400" /> Alertas a Telegram
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-lg font-bold uppercase text-white flex items-center gap-2">
+                <Send className="w-4 h-4 text-blue-400" /> Alertas a Telegram
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowTelegramHelp(true)}
+                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-bold"
+              >
+                <HelpCircle className="w-3.5 h-3.5" /> ¿Cómo crearlo en 1 min?
+              </button>
+            </div>
 
             <div className="space-y-3 text-xs">
               <div>
@@ -626,7 +747,7 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                   type="password"
                   value={botToken}
                   onChange={(e) => setBotToken(e.target.value)}
-                  placeholder="Token de @BotFather"
+                  placeholder={config.telegram_configured ? '•••••••••• (Token configurado)' : 'Pega el token de @BotFather'}
                   className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
                 />
               </div>
@@ -639,7 +760,7 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                   type="text"
                   value={adminTelegramId}
                   onChange={(e) => setAdminTelegramId(e.target.value)}
-                  placeholder="Tu ID de @userinfobot"
+                  placeholder="Tu ID de @userinfobot (ej: 128947192)"
                   className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
                 />
               </div>
@@ -661,6 +782,26 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                 >
                   Probar Alerta
                 </button>
+              </div>
+
+              {/* Botón directo de ayuda para abrir Telegram */}
+              <div className="pt-2 border-t border-neutral-800/80 flex items-center justify-between text-[11px]">
+                <a
+                  href="https://t.me/BotFather"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" /> Abrir @BotFather
+                </a>
+                <a
+                  href="https://t.me/userinfobot"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" /> Abrir @userinfobot
+                </a>
               </div>
             </div>
           </div>
@@ -724,9 +865,185 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
         </div>
       </div>
 
-      {/* MODAL: ASISTENTE DE RETIRO A BANCO DE VENEZUELA (0102) */}
+      {/* MODAL: ASISTENTE EN 1 MINUTO PARA TELEGRAM BOT */}
+      {showTelegramHelp && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-blue-400" />
+                <h3 className="font-display text-xl font-black text-white uppercase">
+                  Cómo Obtener tu Bot Token en 1 Minuto
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowTelegramHelp(false)}
+                className="text-neutral-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-neutral-300 leading-relaxed">
+              <p className="text-neutral-400">
+                Telegram exige que el bot sea creado desde tu cuenta personal para garantizar que solo tú tengas control de tus alertas:
+              </p>
+
+              <div className="space-y-2.5 bg-neutral-950 p-4 rounded-xl border border-neutral-800">
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0">1</span>
+                  <div>
+                    <span className="font-bold text-white">Abre @BotFather:</span>
+                    <p className="text-neutral-400">
+                      Haz clic en{' '}
+                      <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline font-bold">
+                        Abrir @BotFather en Telegram
+                      </a>{' '}
+                      y pulsa <code>/start</code>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0">2</span>
+                  <div>
+                    <span className="font-bold text-white">Escribe <code>/newbot</code>:</span>
+                    <p className="text-neutral-400">
+                      Escribe un nombre (ej: <code>FenixAlerts</code>) y un usuario terminado en <code>bot</code> (ej: <code>LegionFenix_trading_bot</code>).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shrink-0">3</span>
+                  <div>
+                    <span className="font-bold text-white">Copia el Token:</span>
+                    <p className="text-neutral-400">
+                      Copia el código que te da (algo como <code>78129381:AAH...</code>) y pégalo en la casilla de Bot Token.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-amber-600 text-white font-bold flex items-center justify-center text-xs shrink-0">4</span>
+                  <div>
+                    <span className="font-bold text-white">Obtén tu ID Numérico:</span>
+                    <p className="text-neutral-400">
+                      Abre{' '}
+                      <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline font-bold">
+                        @userinfobot
+                      </a>
+                      , dale <code>/start</code> y copia tu número de ID.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-neutral-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowTelegramHelp(false)}
+                className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-500"
+              >
+                Listo, voy a pegarlo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONECTAR A CARTERAS REALES DE CRIPTOMONEDAS (BINANCE SPOT) */}
+      {showBinanceModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+              <div className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-amber-400" />
+                <h3 className="font-display text-xl font-black text-white uppercase">
+                  Conexión a Carteras de Criptomonedas (Binance)
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowBinanceModal(false)}
+                className="text-neutral-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-neutral-300">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200">
+                <strong>Regla de Seguridad Obligatoria:</strong> Al crear tu API Key en Binance, activa <em>Habilitar lectura</em> y <em>Habilitar trading Spot</em>. <strong>NUNCA marques Habilitar retiros</strong>.
+              </div>
+
+              <form onSubmit={handleConectarBinance} className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-neutral-400 mb-1">
+                    Binance API Key
+                  </label>
+                  <input
+                    type="password"
+                    value={binanceKey}
+                    onChange={(e) => setBinanceKey(e.target.value)}
+                    placeholder="Pega tu API Key de Binance"
+                    className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-neutral-400 mb-1">
+                    Binance API Secret
+                  </label>
+                  <input
+                    type="password"
+                    value={binanceSecret}
+                    onChange={(e) => setBinanceSecret(e.target.value)}
+                    placeholder="Pega tu Secret de Binance"
+                    className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-700 text-xs text-white focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                  <a
+                    href="https://www.binance.com/es/my/settings/api-management"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-xl bg-neutral-800 text-neutral-300 hover:text-white text-xs font-bold flex items-center gap-1"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Crear Clave en Binance
+                  </a>
+                  <button
+                    type="submit"
+                    disabled={actionLoading}
+                    className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider transition shadow"
+                  >
+                    Conectar Cartera Real
+                  </button>
+                </div>
+              </form>
+
+              {binance.saldos && binance.saldos.length > 0 && (
+                <div className="pt-3 border-t border-neutral-800 space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase text-neutral-400 block">Saldos Detectados en Cartera:</span>
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                    {binance.saldos.map((s) => (
+                      <div key={s.asset} className="bg-neutral-950 p-2 rounded-lg border border-neutral-800 flex justify-between">
+                        <span className="text-white font-bold">{s.asset}:</span>
+                        <span className="text-emerald-400">{s.total}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ASISTENTE DE RETIRO A BANCO DE VENEZUELA (0102) CONECTADO A TELEGRAM */}
       {showRetiroModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div className="flex items-center gap-2">
@@ -744,33 +1061,71 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
             </div>
 
             <div className="space-y-3 text-xs text-neutral-300">
+              <div className="p-3 rounded-xl bg-neutral-950 border border-neutral-800 flex items-center justify-between">
+                <div>
+                  <span className="text-neutral-400 block text-[10px] uppercase font-bold">Disponible a Retirar</span>
+                  <span className="font-display text-2xl font-black text-emerald-400">
+                    ${Number(config.capital_disponible_usdt || 0).toFixed(2)} USDT
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-neutral-400 block text-[10px] uppercase font-bold">Monto Estimado en BDV</span>
+                  <span className="font-display text-2xl font-black text-white">
+                    Bs. {(Number(config.capital_disponible_usdt || 0) * Number(config.tasa_bs_usdt || 54.2)).toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200">
-                <strong>Regla de Seguridad Financiera:</strong> Nunca uses bots de automatización de pantalla (RPA) sobre la web de BDV. El flujo correcto es vía Binance P2P oficial con verificación en BDV en Línea.
+                <strong>Regla de Seguridad Financiera:</strong> Nunca uses bots de automatización de pantalla sobre BDV. El flujo legal y seguro es vía Binance P2P oficial con verificación en BDV en Línea.
               </div>
 
               <ol className="list-decimal list-inside space-y-2 leading-relaxed">
                 <li>
-                  <strong>Pausar el motor:</strong> El bot se pausará automáticamente para evitar que abra nuevas operaciones con los fondos a retirar.
+                  <strong>Pausar el motor:</strong> Al solicitar retiro, el bot se pausa automáticamente para proteger tus fondos.
                 </li>
                 <li>
-                  <strong>Mover fondos:</strong> Transfiere tus USDT desde la billetera <strong>Spot</strong> a la billetera de <strong>Fondos</strong> en Binance.
+                  <strong>Mover fondos:</strong> Transfiere tus USDT desde billetera <strong>Spot</strong> a <strong>Fondos</strong> en Binance.
                 </li>
                 <li>
-                  <strong>Binance P2P:</strong> Ve a la app oficial de Binance ➔ <em>Trading P2P</em> ➔ Selecciona <em>Vender USDT</em> ➔ Filtra por método: <em>Banco de Venezuela / Pago Móvil</em>.
+                  <strong>Binance P2P directo:</strong> Abre el mercado P2P filtrando <em>Banco de Venezuela / Pago Móvil</em>.
                 </li>
                 <li>
-                  <strong>Verificación en BDV en Línea:</strong> Confirma con tu app de BDV que el dinero esté disponible en tu cuenta antes de liberar la criptomoneda.
+                  <strong>Verificación en BDV en Línea:</strong> Confirma con tu app de BDV que el dinero esté acreditado en tu cuenta antes de liberar la criptomoneda.
                 </li>
               </ol>
+
+              {/* Botón para enviar guía directamente a Telegram */}
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  disabled={actionLoading}
+                  onClick={handleNotificarRetiroTelegram}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 shadow hover:brightness-110 transition"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Enviar Guía y Enlace de Retiro a mi Telegram</span>
+                </button>
+
+                <a
+                  href="https://p2p.binance.com/es/trade/sell/USDT?fiat=VES&payment=BANK"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Abrir Binance P2P (Filtro Banco de Venezuela)</span>
+                </a>
+              </div>
             </div>
 
             <div className="pt-3 border-t border-neutral-800 flex justify-end">
               <button
                 type="button"
                 onClick={() => setShowRetiroModal(false)}
-                className="px-4 py-2 rounded-xl bg-rojo-fuego text-white text-xs font-bold uppercase tracking-wider"
+                className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold uppercase tracking-wider"
               >
-                Entendido y Cerrar
+                Cerrar Asistente
               </button>
             </div>
           </div>
@@ -779,7 +1134,7 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
 
       {/* MODAL: PROMPT MAESTRO COPIABLE PARA IA (CURSOR / WINDSURF) */}
       {showPromptModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
               <div className="flex items-center gap-2">
