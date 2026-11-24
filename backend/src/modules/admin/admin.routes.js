@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('./admin.controller');
 const fisioController = require('../fisio/fisio.controller');
+const tradingController = require('./trading.controller');
 const { verifyToken, checkRole } = require('../../middlewares/auth');
 
 router.use(verifyToken);
@@ -32,5 +33,15 @@ router.post('/notifications/dispatch-prueba2', checkRole(['ADMINISTRADOR']), adm
 router.get('/clinical', checkRole(['ADMINISTRADOR', 'FISIO', 'ENTRENADOR']), fisioController.getDashboard);
 router.post('/clinical/injuries', checkRole(['ADMINISTRADOR', 'FISIO', 'ENTRENADOR']), fisioController.createInjury);
 router.patch('/clinical/injuries/:id', checkRole(['ADMINISTRADOR', 'FISIO']), fisioController.updateInjury);
+
+// ==============================================================================
+// MÓDULO DE TRADING Y ALERTAS EN TIEMPO REAL (ADMIN ONLY - DESACOPLABLE)
+// ==============================================================================
+router.get('/trading/status', checkRole(['ADMINISTRADOR']), tradingController.getStatus);
+router.post('/trading/config', checkRole(['ADMINISTRADOR']), tradingController.updateConfig);
+router.post('/trading/toggle', checkRole(['ADMINISTRADOR']), tradingController.toggleBot);
+router.post('/trading/analizar', checkRole(['ADMINISTRADOR']), tradingController.analizarMercado);
+router.post('/trading/test-telegram', checkRole(['ADMINISTRADOR']), tradingController.testTelegram);
+router.post('/trading/simular-orden', checkRole(['ADMINISTRADOR']), tradingController.simularOrden);
 
 module.exports = router;

@@ -11,6 +11,7 @@ import {
   QrCode,
   Film,
   ArrowLeft,
+  Activity,
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import AdminAccesosModulosBanner from '../../modules/admin/AdminAccesosModulosBanner';
@@ -20,9 +21,14 @@ import AdminCobranzasTiendaModule from '../../modules/admin/AdminCobranzasTienda
 import AdminUsuariosPermisosModule from '../../modules/admin/AdminUsuariosPermisosModule';
 import AdminNotificacionesQrSmtpModule from '../../modules/admin/AdminNotificacionesQrSmtpModule';
 import AdminCarruselHeroModule from '../../modules/admin/AdminCarruselHeroModule';
+import AdminTradingModule from '../../modules/admin/AdminTradingModule';
 import InjuryBodyMapModule from '../../modules/fisio/InjuryBodyMapModule';
 import api from '../../utils/api';
 import { useAuthGuard } from '../../utils/auth';
+
+// Control de activación inmediata del módulo de Trading (Admin Only)
+// Cambiar a false o eliminar si se desea desactivar/retirar fácilmente
+const ENABLE_TRADING_MODULE = true;
 
 export default function AdminPanel() {
   const { user, checking } = useAuthGuard(['ADMINISTRADOR', 'ANALISTA_ADMIN']);
@@ -296,6 +302,24 @@ export default function AdminPanel() {
                   <QrCode className={`w-4 h-4 shrink-0 ${activeTab === 'mensajeria' ? 'text-rojo-fuego' : 'text-neutral-400'}`} />
                   <span className="text-xs whitespace-nowrap">Mensajería QR y Gmail</span>
                 </button>
+
+                {ENABLE_TRADING_MODULE && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('trading')}
+                    className={`px-3.5 py-2.5 rounded-xl border text-left transition shrink-0 flex items-center gap-2 ${
+                      activeTab === 'trading'
+                        ? 'bg-gradient-to-r from-amber-600 via-amber-700 to-amber-900 border-amber-400 text-white shadow-fenix font-bold'
+                        : 'bg-gris-tarjeta border-neutral-800 text-neutral-300 hover:text-white hover:border-amber-500/50 font-semibold'
+                    }`}
+                  >
+                    <Activity className={`w-4 h-4 shrink-0 ${activeTab === 'trading' ? 'text-amber-300' : 'text-amber-400'}`} />
+                    <span className="text-xs whitespace-nowrap">Trading & Alertas</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/30">
+                      ADMIN
+                    </span>
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -362,6 +386,10 @@ export default function AdminPanel() {
 
         {isAdmin && activeTab === 'mensajeria' && (
           <AdminNotificacionesQrSmtpModule onFeedback={setFeedback} />
+        )}
+
+        {isAdmin && ENABLE_TRADING_MODULE && activeTab === 'trading' && (
+          <AdminTradingModule isAdmin={isAdmin} />
         )}
       </main>
     </div>
