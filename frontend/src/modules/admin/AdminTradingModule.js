@@ -21,6 +21,8 @@ import {
   VolumeX,
   HelpCircle,
   Smartphone,
+  Clock,
+  Zap,
 } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -89,6 +91,9 @@ export default function AdminTradingModule({ isAdmin }) {
         if (!editCapitalBs) setEditCapitalBs(res.data.config.capital_asignado_bs);
         if (!editTasa) setEditTasa(res.data.config.tasa_bs_usdt);
         if (res.data.config.par_activo) setSelectedPair(res.data.config.par_activo);
+        if (!botToken && res.data.config.telegram_bot_token) {
+          setBotToken(res.data.config.telegram_bot_token);
+        }
         if (!adminTelegramId && res.data.config.telegram_admin_id) {
           setAdminTelegramId(res.data.config.telegram_admin_id);
         }
@@ -197,6 +202,27 @@ export default function AdminTradingModule({ isAdmin }) {
       }
     } catch (err) {
       setError(err.response?.data?.error || 'No se pudo enviar la alerta de prueba a Telegram.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Detectar y Vincular Telegram automáticamente desde /getUpdates
+  const handleDetectarTelegram = async () => {
+    setActionLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await api.get('/admin/trading/detectar-telegram-id');
+      if (res.data.encontrado) {
+        setSuccess(res.data.message);
+        setAdminTelegramId(res.data.chat_id);
+        fetchStatus();
+      } else {
+        setError(res.data.message);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo detectar el ID de Telegram.');
     } finally {
       setActionLoading(false);
     }
@@ -729,12 +755,46 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
               <h3 className="font-display text-lg font-bold uppercase text-white flex items-center gap-2">
                 <Send className="w-4 h-4 text-blue-400" /> Alertas a Telegram
               </h3>
+              {config.telegram_configured ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  <CheckCircle className="w-3 h-3" /> Bot Conectado
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  <Clock className="w-3 h-3" /> Pendiente Vincular
+                </span>
+              )}
+            </div>
+
+            {/* Asistente Rápido de 2 Pasos */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-950/40 via-neutral-900 to-indigo-950/40 border border-blue-500/25 space-y-2.5">
+              <div className="text-[11px] font-bold text-blue-300 uppercase tracking-wide flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-blue-400" /> Conexión Instantánea con tu Bot:
+              </div>
+
+              {/* Paso 1: Abrir el Bot */}
+              <a
+                href="https://t.me/LegionFenixbot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-200 text-xs font-semibold transition group"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-500 text-white font-bold flex items-center justify-center text-[10px]">1</span>
+                  <span>Abrir <strong>@LegionFenixbot</strong> y pulsar <strong>INICIAR</strong></span>
+                </span>
+                <ExternalLink className="w-3.5 h-3.5 text-blue-400 group-hover:translate-x-0.5 transition" />
+              </a>
+
+              {/* Paso 2: Detección automática en 1 Clic */}
               <button
                 type="button"
-                onClick={() => setShowTelegramHelp(true)}
-                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-bold"
+                disabled={actionLoading}
+                onClick={handleDetectarTelegram}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-blue-900/30 transition disabled:opacity-50"
               >
-                <HelpCircle className="w-3.5 h-3.5" /> ¿Cómo crearlo en 1 min?
+                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <span>2. Detectar y Vincular Mi Telegram Automáticamente</span>
               </button>
             </div>
 
@@ -744,10 +804,10 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                   Telegram Bot Token
                 </label>
                 <input
-                  type="password"
+                  type="text"
                   value={botToken}
                   onChange={(e) => setBotToken(e.target.value)}
-                  placeholder={config.telegram_configured ? '•••••••••• (Token configurado)' : 'Pega el token de @BotFather'}
+                  placeholder="9292349620:AAHIEIX7fLe8Lc7XTrSCpTz35TlNKqrs7dI"
                   className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
                 />
               </div>
@@ -760,7 +820,7 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                   type="text"
                   value={adminTelegramId}
                   onChange={(e) => setAdminTelegramId(e.target.value)}
-                  placeholder="Tu ID de @userinfobot (ej: 128947192)"
+                  placeholder="Se detecta automáticamente al pulsar el botón azul"
                   className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
                 />
               </div>
@@ -778,29 +838,28 @@ Necesito desarrollar un sistema profesional de monitoreo, análisis de flujo de 
                   type="button"
                   disabled={actionLoading}
                   onClick={handleTestTelegram}
-                  className="flex-1 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-xs font-bold transition hover:brightness-110 shadow"
+                  className="flex-1 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white text-xs font-bold transition hover:brightness-110 shadow flex items-center justify-center gap-1.5"
                 >
-                  Probar Alerta
+                  <Send className="w-3 h-3" /> Probar Alerta
                 </button>
               </div>
 
-              {/* Botón directo de ayuda para abrir Telegram */}
+              {/* Botón directo de ayuda */}
               <div className="pt-2 border-t border-neutral-800/80 flex items-center justify-between text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setShowTelegramHelp(true)}
+                  className="text-amber-400 hover:underline flex items-center gap-1"
+                >
+                  <HelpCircle className="w-3 h-3" /> Ver Asistente Completo
+                </button>
                 <a
-                  href="https://t.me/BotFather"
+                  href="https://t.me/LegionFenixbot"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline flex items-center gap-1"
+                  className="text-blue-400 hover:underline flex items-center gap-1 font-mono"
                 >
-                  <ExternalLink className="w-3 h-3" /> Abrir @BotFather
-                </a>
-                <a
-                  href="https://t.me/userinfobot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink className="w-3 h-3" /> Abrir @userinfobot
+                  @LegionFenixbot
                 </a>
               </div>
             </div>

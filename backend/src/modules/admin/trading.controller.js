@@ -26,7 +26,7 @@ const TRADING_STATE = {
   stop_loss_pct: 1.5,
   ultima_actualizacion: new Date().toISOString(),
   telegram_config: {
-    bot_token: process.env.TELEGRAM_BOT_TOKEN || '',
+    bot_token: process.env.TELEGRAM_BOT_TOKEN || '9292349620:AAHIEIX7fLe8Lc7XTrSCpTz35TlNKqrs7dI',
     admin_id: process.env.TELEGRAM_ADMIN_ID || '',
   },
   binance_config: {
@@ -357,7 +357,9 @@ exports.getStatus = async (req, res) => {
         telegram_configured: !!(
           TRADING_STATE.telegram_config.bot_token && TRADING_STATE.telegram_config.admin_id
         ),
+        telegram_bot_token: TRADING_STATE.telegram_config.bot_token,
         telegram_admin_id: TRADING_STATE.telegram_config.admin_id,
+        telegram_bot_username: 'LegionFenixbot',
         binance_connected: TRADING_STATE.binance_config.conectado,
         binance_has_keys: !!(TRADING_STATE.binance_config.api_key && TRADING_STATE.binance_config.api_secret),
       },
@@ -543,6 +545,72 @@ exports.testTelegram = async (req, res) => {
     return res.status(500).json({
       error: `Error al conectar con Telegram: ${error.message}. Verifica el Token y tu conexión.`,
     });
+  }
+};
+
+/**
+ * GET /api/admin/trading/detectar-telegram-id
+ * Consulta /getUpdates para detectar automáticamente el chat_id del usuario que inició el bot
+ */
+exports.detectarTelegramId = async (req, res) => {
+  const token = TRADING_STATE.telegram_config.bot_token || process.env.TELEGRAM_BOT_TOKEN || '9292349620:AAHIEIX7fLe8Lc7XTrSCpTz35TlNKqrs7dI';
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/getUpdates`, {
+      signal: AbortSignal.timeout(6000),
+    });
+    const d = await r.json();
+
+    if (!d.ok) {
+      return res.status(400).json({ error: `Error de Telegram: ${d.description}` });
+    }
+
+    const updates = d.result || [];
+    if (updates.length === 0) {
+      return res.json({
+        encontrado: false,
+        message: 'Aún no has iniciado conversación con el bot. Abre https://t.me/LegionFenixbot y pulsa Iniciar (/start).',
+      });
+    }
+
+    // Obtener el último mensaje
+    const ultimo = updates[updates.length - 1];
+    const chatId = ultimo.message?.chat?.id || ultimo.my_chat_member?.chat?.id;
+    const remitente = ultimo.message?.from?.first_name || ultimo.message?.from?.username || 'Administrador';
+
+    if (!chatId) {
+      return res.json({
+        encontrado: false,
+        message: 'No se detectó un chat ID válido. Abre el bot y pulsa Iniciar (/start).',
+      });
+    }
+
+    // Vincular automáticamente
+    TRADING_STATE.telegram_config.bot_token = token;
+    TRADING_STATE.telegram_config.admin_id = String(chatId);
+    guardarEnEnv('TELEGRAM_BOT_TOKEN', token);
+    guardarEnEnv('TELEGRAM_ADMIN_ID', String(chatId));
+
+    // Enviar confirmación al chat de Telegram
+    const bienvenida =
+      `🎉 *¡VINCULACIÓN EXITOSA CON LEGIÓN FÉNIX FC!*\n\n` +
+      `Hola *${remitente}*, tu cuenta de Telegram ha sido conectada exitosamente como *Administrador Principal*.\n\n` +
+      `• *Bot Oficial:* \`@LegionFenixbot\`\n` +
+      `• *Tu Telegram ID:* \`${chatId}\`\n` +
+      `• *Escáner Continuo:* \`${TRADING_STATE.activo ? 'ACTIVO (Escaneo cada 25s)' : 'LISTO PARA ACTIVAR'}\`\n` +
+      `• *Modo:* \`${TRADING_STATE.modo_simulacion ? 'SIMULACIÓN (Testnet)' : 'PRODUCCIÓN REAL'}\`\n\n` +
+      `_A partir de este momento recibirás aquí las señales de compra/venta y las órdenes de retiro a Banco de Venezuela._`;
+
+    await enviarMensajeTelegram(token, String(chatId), bienvenida);
+
+    return res.json({
+      success: true,
+      encontrado: true,
+      chat_id: String(chatId),
+      remitente,
+      message: `¡Telegram ID (${chatId}) detectado y vinculado exitosamente! Revisa tu Telegram, te enviamos un mensaje de bienvenida.`,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 };
 
